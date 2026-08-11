@@ -13,6 +13,7 @@ const refreshIcons = () => window.lucide?.createIcons();
 let searchOpen = false;
 let searchQuery = '';
 let filter = 'all';
+let completedOpen = false;
 
 /* ---------------- Routing ---------------- */
 
@@ -114,7 +115,7 @@ function searchTaskRow(t) {
   const s = STATUSES[t.status];
   return `
     <div class="task clickable ${t.status === 'completed' ? 'done' : ''}" data-action="goto-list" data-id="${t.listId}">
-      <span class="task-check">${t.status === 'completed' ? '<i data-lucide="check"></i>' : ''}</span>
+      <span class="check-btn static">${t.status === 'completed' ? '<i data-lucide="check"></i>' : ''}</span>
       <span class="task-title">${esc(t.title)}</span>
       ${l ? `<span class="list-chip"><i data-lucide="${l.icon}" style="color:${l.color}"></i>${esc(l.title)}</span>` : ''}
       <span class="status-badge static" style="--sc:${s.color}"><span class="dot"></span><span class="badge-label">${s.label}</span></span>
@@ -142,7 +143,7 @@ function taskRow(t) {
   return `
     <div class="task ${t.status === 'completed' ? 'done' : ''}" data-id="${t.id}">
       <span class="drag-handle" aria-label="إعادة ترتيب"><i data-lucide="grip-vertical"></i></span>
-      <span class="task-check">${t.status === 'completed' ? '<i data-lucide="check"></i>' : ''}</span>
+      <button class="check-btn" data-toggle-check="${t.id}" aria-label="تبديل الإنجاز">${t.status === 'completed' ? '<i data-lucide="check"></i>' : ''}</button>
       <span class="task-title" data-edit="${t.id}">${esc(t.title)}</span>
       <button class="status-badge" data-status="${t.id}" style="--sc:${s.color}"><span class="dot"></span><span class="badge-label">${s.label}</span></button>
       <button class="icon-btn subtle sm" data-task-menu="${t.id}" aria-label="خيارات المهمة"><i data-lucide="more-horizontal"></i></button>
@@ -153,7 +154,28 @@ function renderListView(id) {
   const l = store.getList(id);
   const all = store.tasksOf(id);
   const doneCount = all.filter((t) => t.status === 'completed').length;
-  const tasks = filter === 'all' ? all : all.filter((t) => t.status === filter);
+
+  // جاري العمل دائمًا في الأعلى، ثم الباقي حسب الترتيب اليدوي
+  const inProgressFirst = (a, b) =>
+    (b.status === 'in_progress') - (a.status === 'in_progress') || a.order - b.order;
+
+  let tasksHtml = '';
+  if (filter === 'all') {
+    const active = all.filter((t) => t.status !== 'completed').sort(inProgressFirst);
+    const done = all.filter((t) => t.status === 'completed');
+    tasksHtml = `
+      <div class="tasks" id="tasks">${active.map(taskRow).join('')}</div>
+      ${done.length ? `
+        <button class="completed-toggle" data-action="toggle-completed">
+          <i data-lucide="chevron-${completedOpen ? 'down' : 'left'}"></i>
+          المهام المكتملة
+          <span class="completed-count">${done.length}</span>
+        </button>
+        <div class="tasks completed-list" ${completedOpen ? '' : 'hidden'}>${done.map(taskRow).join('')}</div>` : ''}`;
+  } else {
+    const tasks = all.filter((t) => t.status === filter);
+    tasksHtml = `<div class="tasks" id="tasks">${tasks.map(taskRow).join('') || '<p class="muted center pad">لا توجد مهام بهذه الحالة.</p>'}</div>`;
+  }
 
   headerEl.innerHTML = `
     <div class="header-inner">
@@ -183,7 +205,7 @@ function renderListView(id) {
         <span class="start-sub">إعادة جميع المهام إلى «لم أبدأ»</span>
       </button>` : ''}
     ${all.length
-      ? `<div class="tasks" id="tasks">${tasks.map(taskRow).join('') || '<p class="muted center pad">لا توجد مهام بهذه الحالة.</p>'}</div>`
+      ? tasksHtml
       : `<div class="empty">
           <div class="empty-icon"><i data-lucide="clipboard-list"></i></div>
           <h2>لا توجد مهام</h2>
@@ -561,6 +583,10 @@ function handleAction(action, el) {
       localStorage.removeItem(AUTH_KEY);
       location.reload();
       break;
+    case 'toggle-completed':
+      completedOpen = !completedOpen;
+      render();
+      break;
   }
 }
 
@@ -575,6 +601,13 @@ document.addEventListener('click', (e) => {
 
   const taskMenu = t.closest('[data-task-menu]');
   if (taskMenu) { openTaskMenu(taskMenu, taskMenu.dataset.taskMenu); return; }
+
+  const checkBtn = t.closest('[data-toggle-check]');
+  if (checkBtn) {
+    const task = store.getTask(checkBtn.dataset.toggleCheck);
+    if (task) store.updateTask(task.id, { status: task.status === 'completed' ? 'not_started' : 'completed' });
+    return;
+  }
 
   const statusBtn = t.closest('[data-status]');
   if (statusBtn) { openStatusPicker(statusBtn, statusBtn.dataset.status); return; }
