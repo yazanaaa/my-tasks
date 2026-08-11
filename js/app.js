@@ -69,6 +69,7 @@ function renderHome() {
       <div class="header-actions">
         <button class="icon-btn" data-action="toggle-search" aria-label="بحث"><i data-lucide="search"></i></button>
         <button class="btn-accent" data-action="new-list"><i data-lucide="plus"></i><span class="btn-text">قائمة جديدة</span></button>
+        <button class="icon-btn subtle" data-action="logout" aria-label="تسجيل الخروج" title="تسجيل الخروج"><i data-lucide="log-out"></i></button>
       </div>
     </div>`;
 
@@ -450,6 +451,79 @@ function startEditTask(el, id) {
   input.addEventListener('blur', commit);
 }
 
+/* ---------------- Auth gate ---------------- */
+
+const AUTH_KEY = 'mytasks.auth';
+const AUTH_TTL = 3 * 24 * 60 * 60 * 1000; // 3 أيام
+
+function isAuthed() {
+  try {
+    const t = JSON.parse(localStorage.getItem(AUTH_KEY));
+    return !!t && Date.now() - t < AUTH_TTL;
+  } catch (e) {
+    return false;
+  }
+}
+
+function renderLogin() {
+  headerEl.innerHTML = '';
+  mainEl.innerHTML = `
+    <div class="login-wrap">
+      <div class="login-card">
+        <div class="empty-icon"><i data-lucide="lock"></i></div>
+        <h1 class="login-title">مهامي</h1>
+        <p class="muted">أدخل الرمز السري للمتابعة</p>
+        <input id="login-code" class="pin-input" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="8" autocomplete="off" placeholder="••••" aria-label="الرمز السري">
+        <button class="btn-accent lg login-btn" id="login-btn">دخول</button>
+        <p class="login-error" id="login-error" hidden></p>
+      </div>
+    </div>`;
+  refreshIcons();
+
+  const input = document.getElementById('login-code');
+  const btn = document.getElementById('login-btn');
+  const err = document.getElementById('login-error');
+  input.focus();
+
+  const submit = async () => {
+    const code = input.value.trim();
+    if (!code || btn.disabled) return;
+    btn.disabled = true;
+    err.hidden = true;
+    try {
+      const res = await fetch('/api/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code }),
+      });
+      if (res.ok) {
+        localStorage.setItem(AUTH_KEY, JSON.stringify(Date.now()));
+        startApp();
+        return;
+      }
+      err.textContent = 'الرمز غير صحيح، حاول مجددًا';
+    } catch (e) {
+      err.textContent = 'تعذر الاتصال بالخادم، تحقق من الإنترنت';
+    }
+    err.hidden = false;
+    input.value = '';
+    input.focus();
+    const card = document.querySelector('.login-card');
+    card.classList.remove('shake');
+    void card.offsetWidth;
+    card.classList.add('shake');
+    btn.disabled = false;
+  };
+
+  btn.addEventListener('click', submit);
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); });
+}
+
+function startApp() {
+  store.subscribe(render);
+  store.init();
+}
+
 /* ---------------- Global event delegation ---------------- */
 
 function handleAction(action, el) {
@@ -482,6 +556,10 @@ function handleAction(action, el) {
       break;
     case 'start-over':
       store.resetListTasks(el.dataset.id);
+      break;
+    case 'logout':
+      localStorage.removeItem(AUTH_KEY);
+      location.reload();
       break;
   }
 }
@@ -538,5 +616,5 @@ window.addEventListener('hashchange', () => {
   render();
 });
 
-store.subscribe(render);
-store.init();
+if (isAuthed()) startApp();
+else renderLogin();
