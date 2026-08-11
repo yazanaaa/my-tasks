@@ -1,0 +1,15 @@
+{
+  "name": "my-tasks",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "npx -y serve@14.2.3 -l 3000 .",
+    "dev": "vercel dev"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^0.10.4"
+  },
+  "devDependencies": {
+    "vercel": "^41.0.0"
+  }
+}
