@@ -66,7 +66,7 @@ function renderHome() {
 
   headerEl.innerHTML = `
     <div class="header-inner">
-      <h1 class="app-title">مهامي</h1>
+      <h1 class="app-title"><span class="logo-dot"></span>مهامي</h1>
       <div class="header-actions">
         <button class="icon-btn" data-action="toggle-search" aria-label="بحث"><i data-lucide="search"></i></button>
         <button class="btn-accent" data-action="new-list"><i data-lucide="plus"></i><span class="btn-text">قائمة جديدة</span></button>

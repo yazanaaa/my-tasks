@@ -4,12 +4,14 @@
   "type": "module",
   "scripts": {
     "start": "npx -y serve@14.2.3 -l 3000 .",
-    "dev": "vercel dev"
+    "dev": "vercel dev",
+    "icons": "node gen-icons.mjs"
   },
   "dependencies": {
     "@neondatabase/serverless": "^0.10.4"
   },
   "devDependencies": {
+    "sharp": "^0.35.3",
     "vercel": "^41.0.0"
   }
 }

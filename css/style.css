@@ -57,6 +57,15 @@ button:focus-visible, input:focus-visible { outline: 2px solid rgba(255, 214, 10
 }
 
 .app-title { font-size: 22px; font-weight: 700; margin: 0; }
+.logo-dot {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--accent);
+  margin-inline-end: 8px;
+  vertical-align: -1px;
+}
 
 .header-start { display: flex; align-items: center; gap: 12px; min-width: 0; }
 .header-titles { min-width: 0; }
