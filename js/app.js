@@ -80,21 +80,30 @@ function goalCard(goal) {
   const complete = progress === 100;
   return `
     <article class="goal-card ${complete ? 'complete' : ''}" style="--goal-color:${color};--goal-progress:${progress}">
-      <div class="goal-title-row">
-        <h3>${esc(goal.title)}</h3>
-        ${complete ? '<span class="goal-complete"><i data-lucide="check"></i>مكتمل</span>' : ''}
+      <div class="goal-card-header">
+        <span class="goal-symbol"><i data-lucide="target"></i></span>
+        <div class="goal-heading-copy">
+          <h3>${esc(goal.title)}</h3>
+          <span>${complete ? 'تم تحقيق الهدف' : 'هدف قيد التقدم'}</span>
+        </div>
+        <button class="icon-btn subtle sm" data-goal-menu="${goal.id}" aria-label="خيارات الهدف"><i data-lucide="more-horizontal"></i></button>
       </div>
-      <div class="goal-ring" aria-label="نسبة الإنجاز ${progress}%">
-        <div class="goal-ring-inner">
-          ${complete ? '<i data-lucide="check-circle-2"></i>' : ''}
+      <div class="goal-gauge" aria-label="نسبة الإنجاز ${progress}%">
+        <svg viewBox="0 0 220 122" aria-hidden="true">
+          <path class="goal-gauge-bg" pathLength="100" d="M 20 110 A 90 90 0 0 1 200 110"></path>
+          <path class="goal-gauge-value" pathLength="100" stroke-dasharray="${progress} 100" d="M 20 110 A 90 90 0 0 1 200 110"></path>
+        </svg>
+        <div class="goal-gauge-value-text">
+          ${complete ? '<i data-lucide="check"></i>' : ''}
           <strong>${progress}<small>%</small></strong>
-          <span>نسبة الإنجاز</span>
+          <span>${complete ? 'مكتمل' : 'نسبة الإنجاز'}</span>
         </div>
       </div>
+      <div class="goal-progress-meta"><span>التقدّم</span><strong>${complete ? 'اكتمل' : `${100 - progress}% متبقية`}</strong></div>
       <div class="goal-progress-track" aria-hidden="true"><div style="width:${progress}%"></div></div>
-      <div class="goal-card-footer">
-        <span>${complete ? 'تم الوصول إلى الهدف' : `${100 - progress}% متبقية`}</span>
-        <button class="icon-btn subtle sm" data-goal-menu="${goal.id}" aria-label="خيارات الهدف"><i data-lucide="more-horizontal"></i></button>
+      <div class="goal-card-status">
+        <span class="goal-status-dot"></span>
+        ${complete ? 'أحسنت، وصلت إلى هدفك' : progress >= 70 ? 'اقتربت من الوصول' : progress >= 40 ? 'تقدّم ثابت ومستمر' : 'كل خطوة تصنع فرقًا'}
       </div>
     </article>`;
 }
@@ -110,9 +119,9 @@ function goalsSection() {
       <div class="goals-grid">
         ${goals.map(goalCard).join('')}
         <button class="add-goal-card" data-action="new-goal">
-          <span class="add-goal-icon"><i data-lucide="target"></i><i data-lucide="plus"></i></span>
-          <strong>إضافة هدف</strong>
-          <span>حدّد هدفًا جديدًا وابدأ بقياس تقدمك</span>
+          <span class="add-goal-mark"><i data-lucide="plus"></i></span>
+          <span class="add-goal-copy"><strong>هدف جديد</strong><small>أضف هدفًا وابدأ بتتبّع تقدّمك</small></span>
+          <i class="add-goal-arrow" data-lucide="arrow-left"></i>
         </button>
       </div>
     </section>`;
