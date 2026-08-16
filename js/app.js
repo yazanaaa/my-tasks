@@ -84,26 +84,18 @@ function goalCard(goal) {
         <span class="goal-symbol"><i data-lucide="target"></i></span>
         <div class="goal-heading-copy">
           <h3>${esc(goal.title)}</h3>
-          <span>${complete ? 'تم تحقيق الهدف' : 'هدف قيد التقدم'}</span>
+          <span>الهدف</span>
         </div>
         <button class="icon-btn subtle sm" data-goal-menu="${goal.id}" aria-label="خيارات الهدف"><i data-lucide="more-horizontal"></i></button>
       </div>
-      <div class="goal-gauge" aria-label="نسبة الإنجاز ${progress}%">
-        <svg viewBox="0 0 220 122" aria-hidden="true">
-          <path class="goal-gauge-bg" pathLength="100" d="M 20 110 A 90 90 0 0 1 200 110"></path>
-          <path class="goal-gauge-value" pathLength="100" stroke-dasharray="${progress} 100" d="M 20 110 A 90 90 0 0 1 200 110"></path>
-        </svg>
-        <div class="goal-gauge-value-text">
-          ${complete ? '<i data-lucide="check"></i>' : ''}
-          <strong>${progress}<small>%</small></strong>
-          <span>${complete ? 'مكتمل' : 'نسبة الإنجاز'}</span>
-        </div>
+      <div class="goal-value-row" aria-label="نسبة الإنجاز ${progress}%">
+        <strong class="goal-percent">${progress}<small>%</small></strong>
+        <span class="goal-state ${complete ? 'done' : ''}">${complete ? '<i data-lucide="check"></i> مكتمل' : 'نسبة الإنجاز'}</span>
       </div>
-      <div class="goal-progress-meta"><span>التقدّم</span><strong>${complete ? 'اكتمل' : `${100 - progress}% متبقية`}</strong></div>
       <div class="goal-progress-track" aria-hidden="true"><div style="width:${progress}%"></div></div>
       <div class="goal-card-status">
-        <span class="goal-status-dot"></span>
-        ${complete ? 'أحسنت، وصلت إلى هدفك' : progress >= 70 ? 'اقتربت من الوصول' : progress >= 40 ? 'تقدّم ثابت ومستمر' : 'كل خطوة تصنع فرقًا'}
+        <span>التقدّم الحالي</span>
+        <strong>${complete ? 'تم إنجاز الهدف' : `${100 - progress}% متبقية`}</strong>
       </div>
     </article>`;
 }
@@ -120,8 +112,7 @@ function goalsSection() {
         ${goals.map(goalCard).join('')}
         <button class="add-goal-card" data-action="new-goal">
           <span class="add-goal-mark"><i data-lucide="plus"></i></span>
-          <span class="add-goal-copy"><strong>هدف جديد</strong><small>أضف هدفًا وابدأ بتتبّع تقدّمك</small></span>
-          <i class="add-goal-arrow" data-lucide="arrow-left"></i>
+          <span class="add-goal-copy"><strong>إضافة هدف</strong><small>إنشاء هدف جديد</small></span>
         </button>
       </div>
     </section>`;
