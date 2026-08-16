@@ -11,6 +11,11 @@ const rowToTask = (r) => ({
   createdAt: Number(r.created_at), updatedAt: Number(r.updated_at),
   userId: r.user_id, userEmail: r.user_email,
 });
+const rowToGoal = (r) => ({
+  id: r.id, title: r.title, progress: r.progress, order: r.order,
+  createdAt: Number(r.created_at), updatedAt: Number(r.updated_at),
+  userId: r.user_id,
+});
 
 export default async function handler(req, res) {
   try {
@@ -22,13 +27,20 @@ export default async function handler(req, res) {
     const id = req.query?.id ?? new URL(req.url, 'http://x').searchParams.get('id');
 
     if (req.method === 'GET') {
-      const lists = user.role === 'admin'
-        ? await db`SELECT l.*, u.email AS user_email FROM lists l JOIN users u ON u.id = l.user_id`
-        : await db`SELECT l.*, u.email AS user_email FROM lists l JOIN users u ON u.id = l.user_id WHERE l.user_id = ${user.id}`;
-      const tasks = user.role === 'admin'
-        ? await db`SELECT t.*, u.email AS user_email FROM tasks t JOIN users u ON u.id = t.user_id`
-        : await db`SELECT t.*, u.email AS user_email FROM tasks t JOIN users u ON u.id = t.user_id WHERE t.user_id = ${user.id}`;
-      return json(res, 200, { lists: lists.map(rowToList), tasks: tasks.map(rowToTask) });
+      const [lists, tasks, goals] = await Promise.all([
+        user.role === 'admin'
+          ? db`SELECT l.*, u.email AS user_email FROM lists l JOIN users u ON u.id = l.user_id`
+          : db`SELECT l.*, u.email AS user_email FROM lists l JOIN users u ON u.id = l.user_id WHERE l.user_id = ${user.id}`,
+        user.role === 'admin'
+          ? db`SELECT t.*, u.email AS user_email FROM tasks t JOIN users u ON u.id = t.user_id`
+          : db`SELECT t.*, u.email AS user_email FROM tasks t JOIN users u ON u.id = t.user_id WHERE t.user_id = ${user.id}`,
+        user.role === 'admin'
+          ? db`SELECT * FROM goals`
+          : db`SELECT * FROM goals WHERE user_id = ${user.id}`,
+      ]);
+      return json(res, 200, {
+        lists: lists.map(rowToList), tasks: tasks.map(rowToTask), goals: goals.map(rowToGoal),
+      });
     }
 
     const body = await readBody(req);

@@ -6,6 +6,7 @@ import { hashPassword } from './_security.js';
 const publicUser = (u) => ({
   id: u.id, email: u.email, role: u.role, active: u.active,
   createdAt: Number(u.created_at), listsCount: Number(u.lists_count || 0), tasksCount: Number(u.tasks_count || 0),
+  goalsCount: Number(u.goals_count || 0),
 });
 const validEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 
@@ -21,7 +22,8 @@ export default async function handler(req, res) {
       const rows = await db`
         SELECT u.*,
           (SELECT COUNT(*) FROM lists l WHERE l.user_id = u.id) AS lists_count,
-          (SELECT COUNT(*) FROM tasks t WHERE t.user_id = u.id) AS tasks_count
+          (SELECT COUNT(*) FROM tasks t WHERE t.user_id = u.id) AS tasks_count,
+          (SELECT COUNT(*) FROM goals g WHERE g.user_id = u.id) AS goals_count
         FROM users u ORDER BY u.role ASC, u.created_at ASC`;
       return json(res, 200, { users: rows.map(publicUser) });
     }

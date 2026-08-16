@@ -67,6 +67,57 @@ function listCard(l) {
     </article>`;
 }
 
+function goalColor(progress) {
+  if (progress >= 100) return '#30D158';
+  if (progress >= 70) return '#FFD60A';
+  if (progress >= 40) return '#FF9F0A';
+  return '#64D2FF';
+}
+
+function goalCard(goal) {
+  const progress = Math.max(0, Math.min(100, Number(goal.progress) || 0));
+  const color = goalColor(progress);
+  const complete = progress === 100;
+  return `
+    <article class="goal-card ${complete ? 'complete' : ''}" style="--goal-color:${color};--goal-progress:${progress}">
+      <div class="goal-title-row">
+        <h3>${esc(goal.title)}</h3>
+        ${complete ? '<span class="goal-complete"><i data-lucide="check"></i>مكتمل</span>' : ''}
+      </div>
+      <div class="goal-ring" aria-label="نسبة الإنجاز ${progress}%">
+        <div class="goal-ring-inner">
+          ${complete ? '<i data-lucide="check-circle-2"></i>' : ''}
+          <strong>${progress}<small>%</small></strong>
+          <span>نسبة الإنجاز</span>
+        </div>
+      </div>
+      <div class="goal-progress-track" aria-hidden="true"><div style="width:${progress}%"></div></div>
+      <div class="goal-card-footer">
+        <span>${complete ? 'تم الوصول إلى الهدف' : `${100 - progress}% متبقية`}</span>
+        <button class="icon-btn subtle sm" data-goal-menu="${goal.id}" aria-label="خيارات الهدف"><i data-lucide="more-horizontal"></i></button>
+      </div>
+    </article>`;
+}
+
+function goalsSection() {
+  const goals = store.goals;
+  return `
+    <section class="goals-section" aria-labelledby="goals-title">
+      <div class="goals-heading">
+        <div><span class="goals-kicker">تقدّمك</span><h2 id="goals-title">الأهداف</h2></div>
+        <span class="goals-count">${goals.length}</span>
+      </div>
+      <div class="goals-grid">
+        ${goals.map(goalCard).join('')}
+        <button class="add-goal-card" data-action="new-goal">
+          <span class="add-goal-icon"><i data-lucide="target"></i><i data-lucide="plus"></i></span>
+          <strong>إضافة هدف</strong>
+          <span>حدّد هدفًا جديدًا وابدأ بقياس تقدمك</span>
+        </button>
+      </div>
+    </section>`;
+}
+
 function renderHome() {
   const lists = store.lists;
 
@@ -111,7 +162,7 @@ function renderHome() {
       <button class="btn-accent lg" data-action="new-list"><i data-lucide="plus"></i> إنشاء قائمة</button>
     </div>`;
 
-  mainEl.innerHTML = searchHtml + `<div id="home-content" ${searchQuery.trim() ? 'hidden' : ''}>${contentHtml}</div>`;
+  mainEl.innerHTML = searchHtml + `<div id="home-content" ${searchQuery.trim() ? 'hidden' : ''}>${contentHtml}${goalsSection()}</div>`;
 
   if (searchOpen) updateSearchResults();
   const grid = document.getElementById('lists-grid');
@@ -354,6 +405,24 @@ function openListMenu(anchor, id) {
   ]));
 }
 
+function openGoalMenu(anchor, id) {
+  const goal = store.getGoal(id);
+  if (!goal) return;
+  const content = menuContent([
+    { icon: 'pencil', label: 'تعديل الهدف', onClick: () => openGoalModal(goal) },
+    {
+      icon: 'trash-2', label: 'حذف الهدف', danger: true,
+      onClick: () => openConfirm({
+        title: 'حذف الهدف',
+        message: `هل أنت متأكد من حذف هدف «${goal.title}»؟`,
+        onConfirm: () => store.deleteGoal(id),
+      }),
+    },
+  ]);
+  if (isMobile()) openSheet('خيارات الهدف', content);
+  else openPopover(anchor, content);
+}
+
 function openConfirm({ title, message, confirmLabel = 'حذف', onConfirm }) {
   closeOverlay();
   const bd = document.createElement('div');
@@ -372,6 +441,67 @@ function openConfirm({ title, message, confirmLabel = 'حذف', onConfirm }) {
   m.querySelector('[data-x="ok"]').addEventListener('click', () => { closeOverlay(); onConfirm(); });
   overlayRoot.append(bd, m);
   document.body.style.overflow = 'hidden';
+}
+
+function openGoalModal(goal = null) {
+  closeOverlay();
+  const isEdit = !!goal;
+  const initialProgress = Math.max(0, Math.min(100, Number(goal?.progress) || 0));
+  const bd = document.createElement('div');
+  bd.className = 'backdrop';
+  bd.addEventListener('click', closeOverlay);
+  const m = document.createElement('div');
+  m.className = 'modal goal-modal';
+  m.innerHTML = `
+    <div class="goal-modal-head">
+      <span class="goal-modal-icon"><i data-lucide="target"></i></span>
+      <div><h2>${isEdit ? 'تعديل الهدف' : 'إضافة هدف جديد'}</h2><p class="muted">حوّل فكرتك إلى تقدّم واضح يمكنك قياسه.</p></div>
+    </div>
+    <label class="field-label" for="goal-title">اسم الهدف</label>
+    <input id="goal-title" class="text-input" maxlength="200" autocomplete="off" placeholder="مثال: إطلاق المتجر الجديد" value="${esc(goal?.title || '')}">
+    <div class="goal-progress-label"><label for="goal-progress-range">نسبة الإنجاز الحالية</label><output id="goal-progress-output">${initialProgress}%</output></div>
+    <div class="goal-progress-editor">
+      <input id="goal-progress-range" class="goal-range" type="range" min="0" max="100" step="1" value="${initialProgress}" style="--range-progress:${initialProgress}%">
+      <div class="goal-number-wrap"><input id="goal-progress-number" type="number" min="0" max="100" step="1" value="${initialProgress}" aria-label="نسبة الإنجاز"><span>%</span></div>
+    </div>
+    <p class="login-error" id="goal-form-error" hidden></p>
+    <div class="modal-actions"><button class="btn-ghost" data-x="cancel">إلغاء</button><button class="btn-accent" data-x="save">حفظ الهدف</button></div>`;
+  overlayRoot.append(bd, m);
+  document.body.style.overflow = 'hidden';
+  refreshIcons();
+
+  const titleInput = m.querySelector('#goal-title');
+  const rangeInput = m.querySelector('#goal-progress-range');
+  const numberInput = m.querySelector('#goal-progress-number');
+  const output = m.querySelector('#goal-progress-output');
+  const error = m.querySelector('#goal-form-error');
+  const setProgress = (raw) => {
+    const value = Math.max(0, Math.min(100, Math.round(Number(raw) || 0)));
+    rangeInput.value = value;
+    numberInput.value = value;
+    output.value = `${value}%`;
+    rangeInput.style.setProperty('--range-progress', `${value}%`);
+  };
+  rangeInput.addEventListener('input', () => setProgress(rangeInput.value));
+  numberInput.addEventListener('input', () => setProgress(numberInput.value));
+  const save = () => {
+    const title = titleInput.value.trim();
+    const progress = Number(rangeInput.value);
+    if (!title) {
+      error.textContent = 'أدخل اسم الهدف أولًا.';
+      error.hidden = false;
+      titleInput.classList.add('error');
+      titleInput.focus();
+      return;
+    }
+    if (isEdit) store.updateGoal(goal.id, { title, progress });
+    else store.addGoal(title, progress);
+    closeOverlay();
+  };
+  m.querySelector('[data-x="cancel"]').addEventListener('click', closeOverlay);
+  m.querySelector('[data-x="save"]').addEventListener('click', save);
+  titleInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') save(); });
+  titleInput.focus();
 }
 
 function openListModal(list) {
@@ -522,7 +652,7 @@ function renderUsers() {
             <span class="user-avatar"><i data-lucide="${u.role === 'admin' ? 'shield-check' : 'user'}"></i></span>
             <div class="user-identity"><strong dir="ltr">${esc(u.email)}</strong><span>${u.role === 'admin' ? 'الأدمن الرئيسي' : (u.active ? 'حساب نشط' : 'حساب معطّل')}</span></div>
           </div>
-          <div class="user-stats"><span>${u.listsCount} قائمة</span><span>${u.tasksCount} مهمة</span></div>
+          <div class="user-stats"><span>${u.listsCount} قائمة</span><span>${u.tasksCount} مهمة</span><span>${u.goalsCount || 0} هدف</span></div>
           ${u.role !== 'admin' ? `<div class="user-actions">
             <button class="btn-ghost" data-edit-user="${u.id}">تعديل</button>
             <button class="btn-ghost" data-toggle-user="${u.id}">${u.active ? 'تعطيل' : 'تفعيل'}</button>
@@ -570,7 +700,7 @@ function openUserModal(user = null) {
       const data = await usersApi(user ? `?id=${encodeURIComponent(user.id)}` : '', user ? 'PATCH' : 'POST', body);
       if (user) {
         adminUsers = adminUsers.map((item) => item.id === user.id
-          ? { ...item, ...data.user, listsCount: item.listsCount, tasksCount: item.tasksCount }
+          ? { ...item, ...data.user, listsCount: item.listsCount, tasksCount: item.tasksCount, goalsCount: item.goalsCount }
           : item);
       } else {
         adminUsers.push(data.user);
@@ -595,7 +725,7 @@ async function toggleUser(id) {
   if (!user) return;
   const data = await usersApi(`?id=${encodeURIComponent(id)}`, 'PATCH', { active: !user.active });
   adminUsers = adminUsers.map((item) => item.id === id
-    ? { ...item, ...data.user, listsCount: item.listsCount, tasksCount: item.tasksCount }
+    ? { ...item, ...data.user, listsCount: item.listsCount, tasksCount: item.tasksCount, goalsCount: item.goalsCount }
     : item);
   render();
 }
@@ -737,6 +867,9 @@ async function handleAction(action, el) {
     case 'new-list':
       openListModal();
       break;
+    case 'new-goal':
+      openGoalModal();
+      break;
     case 'manage-users':
       await loadUsers();
       location.hash = '#/users';
@@ -790,6 +923,9 @@ document.addEventListener('click', (e) => {
 
   const cardMenu = t.closest('[data-card-menu]');
   if (cardMenu) { openListMenu(cardMenu, cardMenu.dataset.cardMenu); return; }
+
+  const goalMenu = t.closest('[data-goal-menu]');
+  if (goalMenu) { openGoalMenu(goalMenu, goalMenu.dataset.goalMenu); return; }
 
   const taskMenu = t.closest('[data-task-menu]');
   if (taskMenu) { openTaskMenu(taskMenu, taskMenu.dataset.taskMenu); return; }

@@ -296,6 +296,158 @@ button:focus-visible, input:focus-visible { outline: 2px solid rgba(255, 214, 10
 .add-card:hover { border-color: rgba(255, 214, 10, 0.5); color: var(--accent); }
 .add-card svg { width: 22px; height: 22px; }
 
+/* ---------- Goals ---------- */
+.goals-section {
+  position: relative;
+  margin-top: 44px;
+  padding-top: 26px;
+  border-top: 1px solid var(--border);
+}
+.goals-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.goals-heading h2 { margin: 1px 0 0; font-size: 22px; }
+.goals-kicker { color: var(--accent); font-size: 11px; font-weight: 600; letter-spacing: 0.04em; }
+.goals-count {
+  min-width: 32px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 99px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-dim);
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 600;
+}
+.goals-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 270px), 1fr));
+  gap: 16px;
+}
+.goal-card {
+  position: relative;
+  min-height: 355px;
+  padding: 18px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--goal-color) 22%, var(--border));
+  border-radius: 20px;
+  background:
+    radial-gradient(circle at 85% 10%, color-mix(in srgb, var(--goal-color) 12%, transparent), transparent 42%),
+    linear-gradient(145deg, #1d1d21, #151517);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035), 0 14px 38px rgba(0, 0, 0, 0.16);
+  transition: transform 0.2s var(--ease), border-color 0.2s var(--ease);
+}
+.goal-card:hover { transform: translateY(-3px); border-color: color-mix(in srgb, var(--goal-color) 38%, var(--border)); }
+.goal-card::after {
+  content: '';
+  position: absolute;
+  width: 120px;
+  height: 120px;
+  inset-inline-end: -60px;
+  bottom: -70px;
+  border: 1px solid color-mix(in srgb, var(--goal-color) 13%, transparent);
+  border-radius: 50%;
+}
+.goal-card.complete { box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 12px 34px rgba(48, 209, 88, 0.08); }
+.goal-title-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; min-height: 48px; }
+.goal-title-row h3 { margin: 0; font-size: 17px; line-height: 1.55; overflow-wrap: anywhere; }
+.goal-complete {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 26px;
+  padding: 0 8px;
+  border-radius: 99px;
+  background: rgba(48, 209, 88, 0.13);
+  color: #30D158;
+  font-size: 11px;
+  font-weight: 600;
+}
+.goal-complete svg { width: 13px; height: 13px; }
+.goal-ring {
+  width: 154px;
+  height: 154px;
+  margin: 12px auto 20px;
+  padding: 10px;
+  border-radius: 50%;
+  background: conic-gradient(var(--goal-color) calc(var(--goal-progress) * 1%), rgba(255, 255, 255, 0.07) 0);
+  box-shadow: 0 0 32px color-mix(in srgb, var(--goal-color) 12%, transparent);
+}
+.goal-ring-inner {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #171719;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+.goal-ring-inner > svg { width: 20px; height: 20px; margin-bottom: 1px; color: var(--goal-color); }
+.goal-ring-inner strong { direction: ltr; font-size: 36px; line-height: 1; font-weight: 700; letter-spacing: -0.04em; }
+.goal-ring-inner strong small { font-size: 17px; color: var(--goal-color); margin-left: 2px; }
+.goal-ring-inner span { margin-top: 6px; color: var(--muted); font-size: 11px; }
+.goal-progress-track { height: 7px; overflow: hidden; border-radius: 99px; background: rgba(255, 255, 255, 0.07); }
+.goal-progress-track > div {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--goal-color) 70%, #fff), var(--goal-color));
+  box-shadow: 0 0 12px color-mix(in srgb, var(--goal-color) 35%, transparent);
+  transition: width 0.35s var(--ease);
+}
+.goal-card-footer { position: relative; z-index: 1; display: flex; align-items: center; justify-content: space-between; min-height: 42px; margin-top: 7px; }
+.goal-card-footer > span { color: var(--muted); font-size: 12px; }
+.add-goal-card {
+  min-height: 355px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px dashed rgba(255, 214, 10, 0.25);
+  border-radius: 20px;
+  background: linear-gradient(145deg, rgba(255, 214, 10, 0.035), rgba(255, 255, 255, 0.012));
+  color: var(--text);
+  cursor: pointer;
+  transition: transform 0.2s var(--ease), border-color 0.2s var(--ease), background 0.2s var(--ease);
+}
+.add-goal-card:hover { transform: translateY(-3px); border-color: rgba(255, 214, 10, 0.55); background: var(--accent-dim); }
+.add-goal-card > strong { margin-top: 8px; font-size: 16px; }
+.add-goal-card > span:last-child { max-width: 190px; color: var(--muted); font-size: 12px; line-height: 1.7; }
+.add-goal-icon {
+  position: relative;
+  width: 78px;
+  height: 78px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-dim);
+  color: var(--accent);
+  box-shadow: 0 0 0 10px rgba(255, 214, 10, 0.025);
+}
+.add-goal-icon > svg:first-child { width: 32px; height: 32px; }
+.add-goal-icon > svg:last-child {
+  position: absolute;
+  inset-inline-end: -1px;
+  bottom: 2px;
+  width: 24px;
+  height: 24px;
+  padding: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #111;
+  stroke-width: 3;
+}
+
 /* ---------- Filter chips ---------- */
 .chips {
   display: flex;
@@ -569,6 +721,79 @@ button:focus-visible, input:focus-visible { outline: 2px solid rgba(255, 214, 10
 .text-input:focus { border-color: rgba(255, 214, 10, 0.5); }
 .text-input.error { border-color: var(--danger); }
 .inline-edit { height: 38px; padding: 0 10px; font-size: 15px; }
+
+.goal-modal-head { display: flex; align-items: center; gap: 12px; }
+.goal-modal-head h2 { margin: 0 0 3px; }
+.goal-modal-head p { margin: 0; font-size: 12px; }
+.goal-modal-icon {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 13px;
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+.goal-modal-icon svg { width: 21px; height: 21px; }
+.goal-progress-label { display: flex; align-items: center; justify-content: space-between; margin: 20px 0 10px; font-size: 13px; color: var(--muted); }
+.goal-progress-label output { color: var(--accent); font-size: 20px; font-weight: 700; direction: ltr; }
+.goal-progress-editor { display: flex; align-items: center; gap: 14px; }
+.goal-range {
+  --range-progress: 0%;
+  flex: 1;
+  height: 6px;
+  appearance: none;
+  border-radius: 99px;
+  outline: none;
+  background: linear-gradient(to left, var(--accent) var(--range-progress), rgba(255,255,255,.09) var(--range-progress));
+  direction: rtl;
+}
+.goal-range::-webkit-slider-thumb {
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  border: 4px solid var(--card-2);
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 1px rgba(255, 214, 10, .35), 0 3px 10px rgba(0,0,0,.35);
+  cursor: grab;
+}
+.goal-range::-moz-range-thumb {
+  width: 15px;
+  height: 15px;
+  border: 4px solid var(--card-2);
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: grab;
+}
+.goal-number-wrap {
+  width: 82px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--card);
+  direction: ltr;
+}
+.goal-number-wrap input {
+  min-width: 0;
+  width: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  text-align: center;
+  appearance: textfield;
+}
+.goal-number-wrap input::-webkit-inner-spin-button { appearance: none; }
+.goal-number-wrap span { color: var(--accent); font-size: 13px; }
 
 .color-row { display: flex; flex-wrap: wrap; gap: 10px; }
 .color-dot {
@@ -879,5 +1104,10 @@ button:focus-visible, input:focus-visible { outline: 2px solid rgba(255, 214, 10
   .icon-btn { min-width: 44px; min-height: 44px; }
   .icon-btn.sm { min-width: 40px; min-height: 40px; }
   .task { min-height: 56px; }
+  .goals-section { margin-top: 34px; }
+  .goals-grid { grid-template-columns: 1fr; }
+  .goal-card, .add-goal-card { min-height: 338px; }
+  .goal-ring { width: 146px; height: 146px; }
+  .goal-progress-editor { gap: 10px; }
   .modal-actions .btn-ghost, .modal-actions .btn-accent, .modal-actions .btn-danger { min-height: 44px; }
 }

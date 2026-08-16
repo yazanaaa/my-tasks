@@ -20,7 +20,7 @@ export function ensureSchema() {
       const db = sql();
       try {
         const version = await db`SELECT value FROM app_meta WHERE key = 'schema_version' LIMIT 1`;
-        if (version[0]?.value === '1') return;
+        if (version[0]?.value === '2') return;
       } catch (e) {
         // First run (or upgrade from the pre-versioned schema): run the migration below.
       }
@@ -70,6 +70,17 @@ export function ensureSchema() {
           )`,
         tx`ALTER TABLE tasks ADD COLUMN IF NOT EXISTS user_id TEXT REFERENCES users(id) ON DELETE CASCADE`,
         tx`CREATE INDEX IF NOT EXISTS tasks_user_list_idx ON tasks (user_id, list_id)`,
+        tx`
+          CREATE TABLE IF NOT EXISTS goals (
+            id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            title TEXT NOT NULL,
+            progress INTEGER NOT NULL DEFAULT 0 CHECK (progress BETWEEN 0 AND 100),
+            "order" INTEGER NOT NULL DEFAULT 0,
+            created_at BIGINT NOT NULL DEFAULT 0,
+            updated_at BIGINT NOT NULL DEFAULT 0
+          )`,
+        tx`CREATE INDEX IF NOT EXISTS goals_user_idx ON goals (user_id, "order")`,
       ]);
 
       const adminEmail = String(process.env.ADMIN_EMAIL || 'yazanaboatieh@gmail.com').trim().toLowerCase();
@@ -92,7 +103,7 @@ export function ensureSchema() {
       }
       await db`DELETE FROM sessions WHERE expires_at <= ${Date.now()}`;
       await db`
-        INSERT INTO app_meta (key, value) VALUES ('schema_version', '1')
+        INSERT INTO app_meta (key, value) VALUES ('schema_version', '2')
         ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`;
     })().catch((e) => {
       schemaReady = null;

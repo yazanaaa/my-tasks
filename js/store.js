@@ -4,7 +4,7 @@
 
 const STORAGE_KEY = 'mytasks.v1';
 
-let state = { lists: [], tasks: [] };
+let state = { lists: [], tasks: [], goals: [] };
 let backend = null; // 'api' | 'local'
 let currentUser = null;
 const listeners = new Set();
@@ -65,7 +65,7 @@ export const store = {
 
   async init() {
     const data = await api('/api/lists', 'GET');
-    state = data;
+    state = { lists: data.lists || [], tasks: data.tasks || [], goals: data.goals || [] };
     backend = 'api';
     // Remove the legacy shared-device cache; authenticated data must remain server-scoped.
     try { localStorage.removeItem(STORAGE_KEY); } catch (e) { /* ignore */ }
@@ -80,6 +80,10 @@ export const store = {
     return [...state.tasks];
   },
 
+  get goals() {
+    return [...state.goals].sort(byOrder);
+  },
+
   tasksOf(listId) {
     return state.tasks.filter((t) => t.listId === listId).sort(byOrder);
   },
@@ -90,6 +94,10 @@ export const store = {
 
   getTask(id) {
     return state.tasks.find((t) => t.id === id);
+  },
+
+  getGoal(id) {
+    return state.goals.find((g) => g.id === id);
   },
 
   subscribe(fn) {
@@ -194,6 +202,35 @@ export const store = {
     });
     if (backend === 'api') sync(api('/api/tasks', 'POST', { action: 'reset', listId }));
     else persistLocal();
+    emit();
+  },
+
+  addGoal(title, progress) {
+    const goal = {
+      id: crypto.randomUUID(),
+      title,
+      progress,
+      order: state.goals.length,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      userId: currentUser?.id,
+    };
+    state.goals.push(goal);
+    sync(api('/api/goals', 'POST', { goal }));
+    emit();
+  },
+
+  updateGoal(id, patch) {
+    const goal = state.goals.find((g) => g.id === id);
+    if (!goal) return;
+    Object.assign(goal, patch, { updatedAt: Date.now() });
+    sync(api(`/api/goals?id=${encodeURIComponent(id)}`, 'PATCH', patch));
+    emit();
+  },
+
+  deleteGoal(id) {
+    state.goals = state.goals.filter((g) => g.id !== id);
+    sync(api(`/api/goals?id=${encodeURIComponent(id)}`, 'DELETE'));
     emit();
   },
 };
