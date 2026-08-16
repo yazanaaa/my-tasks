@@ -9,6 +9,7 @@ const overlayRoot = document.getElementById('overlay-root');
 const esc = (s = '') => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const isMobile = () => window.matchMedia('(max-width: 767px)').matches;
 const refreshIcons = () => window.lucide?.createIcons();
+const currentUserName = () => currentUser?.email?.split('@')[0] || 'بك';
 
 let searchOpen = false;
 let searchQuery = '';
@@ -58,7 +59,6 @@ function listCard(l) {
         </span>
       </div>
       <h3 class="list-title">${esc(l.title)}</h3>
-      ${currentUser?.role === 'admin' ? `<p class="owner-label"><i data-lucide="user"></i>${esc(l.userEmail)}</p>` : ''}
       <p class="list-count">${l.recurring ? '<i data-lucide="repeat" class="repeat-ico"></i>' : ''}${tasks.length ? `${done} من ${tasks.length} مكتملة` : 'لا توجد مهام'}</p>
       <div class="card-bottom">
         <div class="progress"><div class="progress-fill" style="width:${pct}%;--c:${l.color}"></div></div>
@@ -72,7 +72,10 @@ function renderHome() {
 
   headerEl.innerHTML = `
     <div class="header-inner">
-      <h1 class="app-title"><span class="logo-dot"></span>مهامي</h1>
+      <div class="app-brand">
+        <h1 class="app-title"><span class="logo-dot"></span>مهامي</h1>
+        <span class="welcome-user">مرحبًا، ${esc(currentUserName())}</span>
+      </div>
       <div class="header-actions">
         ${currentUser?.role === 'admin' ? '<button class="icon-btn" data-action="manage-users" aria-label="إدارة المستخدمين" title="إدارة المستخدمين"><i data-lucide="users"></i></button>' : ''}
         <button class="icon-btn" data-action="toggle-search" aria-label="بحث"><i data-lucide="search"></i></button>
@@ -564,8 +567,14 @@ function openUserModal(user = null) {
     try {
       const body = { email: emailInput.value.trim() };
       if (passwordInput.value || !user) body.password = passwordInput.value;
-      await usersApi(user ? `?id=${encodeURIComponent(user.id)}` : '', user ? 'PATCH' : 'POST', body);
-      await loadUsers();
+      const data = await usersApi(user ? `?id=${encodeURIComponent(user.id)}` : '', user ? 'PATCH' : 'POST', body);
+      if (user) {
+        adminUsers = adminUsers.map((item) => item.id === user.id
+          ? { ...item, ...data.user, listsCount: item.listsCount, tasksCount: item.tasksCount }
+          : item);
+      } else {
+        adminUsers.push(data.user);
+      }
       closeOverlay();
       render();
     } catch (e) {
@@ -584,8 +593,10 @@ function openUserModal(user = null) {
 async function toggleUser(id) {
   const user = adminUsers.find((u) => u.id === id);
   if (!user) return;
-  await usersApi(`?id=${encodeURIComponent(id)}`, 'PATCH', { active: !user.active });
-  await loadUsers();
+  const data = await usersApi(`?id=${encodeURIComponent(id)}`, 'PATCH', { active: !user.active });
+  adminUsers = adminUsers.map((item) => item.id === id
+    ? { ...item, ...data.user, listsCount: item.listsCount, tasksCount: item.tasksCount }
+    : item);
   render();
 }
 
@@ -597,7 +608,7 @@ function deleteUser(id) {
     message: `سيتم حذف حساب ${user.email} وجميع قوائمه ومهامه نهائيًا.`,
     onConfirm: async () => {
       await usersApi(`?id=${encodeURIComponent(id)}`, 'DELETE');
-      await loadUsers();
+      adminUsers = adminUsers.filter((item) => item.id !== id);
       render();
     },
   });

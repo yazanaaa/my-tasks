@@ -18,49 +18,59 @@ export function ensureSchema() {
   if (!schemaReady) {
     schemaReady = (async () => {
       const db = sql();
-      await db`
-        CREATE TABLE IF NOT EXISTS users (
-          id TEXT PRIMARY KEY,
-          email TEXT NOT NULL UNIQUE,
-          password_hash TEXT NOT NULL,
-          role TEXT NOT NULL DEFAULT 'user' CHECK (role IN ('admin', 'user')),
-          active BOOLEAN NOT NULL DEFAULT TRUE,
-          created_at BIGINT NOT NULL DEFAULT 0,
-          updated_at BIGINT NOT NULL DEFAULT 0
-        )`;
-      await db`
-        CREATE TABLE IF NOT EXISTS sessions (
-          token_hash TEXT PRIMARY KEY,
-          user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-          expires_at BIGINT NOT NULL,
-          created_at BIGINT NOT NULL DEFAULT 0
-        )`;
-      await db`CREATE INDEX IF NOT EXISTS sessions_expires_idx ON sessions (expires_at)`;
-      await db`
-        CREATE TABLE IF NOT EXISTS lists (
-          id TEXT PRIMARY KEY,
-          title TEXT NOT NULL,
-          icon TEXT NOT NULL DEFAULT 'list',
-          color TEXT NOT NULL DEFAULT '#FFD60A',
-          recurring BOOLEAN NOT NULL DEFAULT FALSE,
-          pinned BOOLEAN NOT NULL DEFAULT FALSE,
-          "order" INTEGER NOT NULL DEFAULT 0,
-          created_at BIGINT NOT NULL DEFAULT 0
-        )`;
-      await db`ALTER TABLE lists ADD COLUMN IF NOT EXISTS user_id TEXT REFERENCES users(id) ON DELETE CASCADE`;
-      await db`CREATE INDEX IF NOT EXISTS lists_user_idx ON lists (user_id)`;
-      await db`
-        CREATE TABLE IF NOT EXISTS tasks (
-          id TEXT PRIMARY KEY,
-          list_id TEXT NOT NULL REFERENCES lists(id) ON DELETE CASCADE,
-          title TEXT NOT NULL,
-          status TEXT NOT NULL DEFAULT 'not_started',
-          "order" INTEGER NOT NULL DEFAULT 0,
-          created_at BIGINT NOT NULL DEFAULT 0,
-          updated_at BIGINT NOT NULL DEFAULT 0
-        )`;
-      await db`ALTER TABLE tasks ADD COLUMN IF NOT EXISTS user_id TEXT REFERENCES users(id) ON DELETE CASCADE`;
-      await db`CREATE INDEX IF NOT EXISTS tasks_user_list_idx ON tasks (user_id, list_id)`;
+      try {
+        const version = await db`SELECT value FROM app_meta WHERE key = 'schema_version' LIMIT 1`;
+        if (version[0]?.value === '1') return;
+      } catch (e) {
+        // First run (or upgrade from the pre-versioned schema): run the migration below.
+      }
+
+      await db.transaction((tx) => [
+        tx`CREATE TABLE IF NOT EXISTS app_meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)`,
+        tx`
+          CREATE TABLE IF NOT EXISTS users (
+            id TEXT PRIMARY KEY,
+            email TEXT NOT NULL UNIQUE,
+            password_hash TEXT NOT NULL,
+            role TEXT NOT NULL DEFAULT 'user' CHECK (role IN ('admin', 'user')),
+            active BOOLEAN NOT NULL DEFAULT TRUE,
+            created_at BIGINT NOT NULL DEFAULT 0,
+            updated_at BIGINT NOT NULL DEFAULT 0
+          )`,
+        tx`
+          CREATE TABLE IF NOT EXISTS sessions (
+            token_hash TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            expires_at BIGINT NOT NULL,
+            created_at BIGINT NOT NULL DEFAULT 0
+          )`,
+        tx`CREATE INDEX IF NOT EXISTS sessions_expires_idx ON sessions (expires_at)`,
+        tx`
+          CREATE TABLE IF NOT EXISTS lists (
+            id TEXT PRIMARY KEY,
+            title TEXT NOT NULL,
+            icon TEXT NOT NULL DEFAULT 'list',
+            color TEXT NOT NULL DEFAULT '#FFD60A',
+            recurring BOOLEAN NOT NULL DEFAULT FALSE,
+            pinned BOOLEAN NOT NULL DEFAULT FALSE,
+            "order" INTEGER NOT NULL DEFAULT 0,
+            created_at BIGINT NOT NULL DEFAULT 0
+          )`,
+        tx`ALTER TABLE lists ADD COLUMN IF NOT EXISTS user_id TEXT REFERENCES users(id) ON DELETE CASCADE`,
+        tx`CREATE INDEX IF NOT EXISTS lists_user_idx ON lists (user_id)`,
+        tx`
+          CREATE TABLE IF NOT EXISTS tasks (
+            id TEXT PRIMARY KEY,
+            list_id TEXT NOT NULL REFERENCES lists(id) ON DELETE CASCADE,
+            title TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'not_started',
+            "order" INTEGER NOT NULL DEFAULT 0,
+            created_at BIGINT NOT NULL DEFAULT 0,
+            updated_at BIGINT NOT NULL DEFAULT 0
+          )`,
+        tx`ALTER TABLE tasks ADD COLUMN IF NOT EXISTS user_id TEXT REFERENCES users(id) ON DELETE CASCADE`,
+        tx`CREATE INDEX IF NOT EXISTS tasks_user_list_idx ON tasks (user_id, list_id)`,
+      ]);
 
       const adminEmail = String(process.env.ADMIN_EMAIL || 'yazanaboatieh@gmail.com').trim().toLowerCase();
       const adminPassword = process.env.ADMIN_PASSWORD;
@@ -81,6 +91,9 @@ export function ensureSchema() {
           FROM lists l WHERE t.list_id = l.id AND t.user_id IS NULL`;
       }
       await db`DELETE FROM sessions WHERE expires_at <= ${Date.now()}`;
+      await db`
+        INSERT INTO app_meta (key, value) VALUES ('schema_version', '1')
+        ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`;
     })().catch((e) => {
       schemaReady = null;
       throw e;

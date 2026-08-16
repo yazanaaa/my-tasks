@@ -33,15 +33,18 @@ export default async function handler(req, res) {
       if (!validEmail(email)) return json(res, 400, { error: 'invalid_email' });
       if (password.length < 8) return json(res, 400, { error: 'weak_password' });
       const passwordHash = await hashPassword(password);
+      let created;
       try {
-        await db`
+        const rows = await db`
           INSERT INTO users (id, email, password_hash, role, active, created_at, updated_at)
-          VALUES (${randomUUID()}, ${email}, ${passwordHash}, 'user', TRUE, ${Date.now()}, ${Date.now()})`;
+          VALUES (${randomUUID()}, ${email}, ${passwordHash}, 'user', TRUE, ${Date.now()}, ${Date.now()})
+          RETURNING *`;
+        created = rows[0];
       } catch (e) {
         if (String(e.message).toLowerCase().includes('unique')) return json(res, 409, { error: 'email_exists' });
         throw e;
       }
-      return json(res, 201, { ok: true });
+      return json(res, 201, { user: publicUser(created) });
     }
 
     if (!id) return json(res, 400, { error: 'id_required' });
@@ -58,16 +61,19 @@ export default async function handler(req, res) {
         passwordHash = await hashPassword(String(body.password));
       }
       const active = body.active === undefined ? target[0].active : Boolean(body.active);
+      let updated;
       try {
-        await db`
+        const rows = await db`
           UPDATE users SET email = ${email}, password_hash = ${passwordHash}, active = ${active}, updated_at = ${Date.now()}
-          WHERE id = ${id}`;
+          WHERE id = ${id}
+          RETURNING *`;
+        updated = rows[0];
       } catch (e) {
         if (String(e.message).toLowerCase().includes('unique')) return json(res, 409, { error: 'email_exists' });
         throw e;
       }
       if (!active || body.password) await db`DELETE FROM sessions WHERE user_id = ${id}`;
-      return json(res, 200, { ok: true });
+      return json(res, 200, { user: publicUser(updated) });
     }
 
     if (req.method === 'DELETE') {
