@@ -1,11 +1,12 @@
 // Data layer — the only file that touches persistence.
 // Primary: Neon Postgres via /api/* (Vercel serverless functions).
-// Fallback: LocalStorage when the API is unreachable (e.g. plain static hosting).
+// Authentication and ownership are enforced by the API; there is no unauthenticated fallback.
 
 const STORAGE_KEY = 'mytasks.v1';
 
 let state = { lists: [], tasks: [] };
 let backend = null; // 'api' | 'local'
+let currentUser = null;
 const listeners = new Set();
 
 function emit() {
@@ -37,29 +38,37 @@ async function api(path, method, body) {
     headers: body ? { 'Content-Type': 'application/json' } : undefined,
     body: body ? JSON.stringify(body) : undefined,
   });
-  if (!res.ok) throw new Error(`API ${method} ${path} failed: ${res.status}`);
+  if (!res.ok) {
+    const error = new Error(`API ${method} ${path} failed: ${res.status}`);
+    error.status = res.status;
+    try { error.data = await res.json(); } catch (e) { /* no JSON body */ }
+    throw error;
+  }
   return res.json();
 }
 
 // Fire-and-forget sync; the local cache is already updated optimistically.
 function sync(promise) {
-  promise.catch((e) => console.error('فشل المزامنة مع قاعدة البيانات:', e));
+  promise.catch((e) => {
+    console.error('فشل المزامنة مع قاعدة البيانات:', e);
+    if (e.status === 401) window.dispatchEvent(new CustomEvent('auth-required'));
+  });
 }
 
 const byPinThenOrder = (a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || a.order - b.order;
 const byOrder = (a, b) => a.order - b.order;
 
 export const store = {
+  setCurrentUser(user) {
+    currentUser = user;
+  },
+
   async init() {
-    try {
-      const data = await api('/api/lists', 'GET');
-      state = data;
-      backend = 'api';
-      persistLocal(); // keep a local cache copy
-    } catch (e) {
-      state = loadLocal();
-      backend = 'local';
-    }
+    const data = await api('/api/lists', 'GET');
+    state = data;
+    backend = 'api';
+    // Remove the legacy shared-device cache; authenticated data must remain server-scoped.
+    try { localStorage.removeItem(STORAGE_KEY); } catch (e) { /* ignore */ }
     emit();
   },
 
@@ -98,6 +107,8 @@ export const store = {
       pinned: false,
       order: state.lists.length,
       createdAt: Date.now(),
+      userId: currentUser?.id,
+      userEmail: currentUser?.email,
     };
     state.lists.push(list);
     if (backend === 'api') sync(api('/api/lists', 'POST', { list }));

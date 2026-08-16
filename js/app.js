@@ -14,10 +14,13 @@ let searchOpen = false;
 let searchQuery = '';
 let filter = 'all';
 let completedOpen = false;
+let currentUser = null;
+let adminUsers = [];
 
 /* ---------------- Routing ---------------- */
 
 function currentRoute() {
+  if (location.hash === '#/users' && currentUser?.role === 'admin') return { view: 'users' };
   const m = location.hash.match(/^#\/list\/(.+)$/);
   if (m && store.getList(m[1])) return { view: 'list', id: m[1] };
   return { view: 'home' };
@@ -26,7 +29,9 @@ function currentRoute() {
 function render() {
   const activeId = document.activeElement?.id;
   const r = currentRoute();
-  if (r.view === 'list') renderListView(r.id); else renderHome();
+  if (r.view === 'list') renderListView(r.id);
+  else if (r.view === 'users') renderUsers();
+  else renderHome();
   refreshIcons();
   if (activeId) {
     const el = document.getElementById(activeId);
@@ -53,6 +58,7 @@ function listCard(l) {
         </span>
       </div>
       <h3 class="list-title">${esc(l.title)}</h3>
+      ${currentUser?.role === 'admin' ? `<p class="owner-label"><i data-lucide="user"></i>${esc(l.userEmail)}</p>` : ''}
       <p class="list-count">${l.recurring ? '<i data-lucide="repeat" class="repeat-ico"></i>' : ''}${tasks.length ? `${done} من ${tasks.length} مكتملة` : 'لا توجد مهام'}</p>
       <div class="card-bottom">
         <div class="progress"><div class="progress-fill" style="width:${pct}%;--c:${l.color}"></div></div>
@@ -68,6 +74,7 @@ function renderHome() {
     <div class="header-inner">
       <h1 class="app-title"><span class="logo-dot"></span>مهامي</h1>
       <div class="header-actions">
+        ${currentUser?.role === 'admin' ? '<button class="icon-btn" data-action="manage-users" aria-label="إدارة المستخدمين" title="إدارة المستخدمين"><i data-lucide="users"></i></button>' : ''}
         <button class="icon-btn" data-action="toggle-search" aria-label="بحث"><i data-lucide="search"></i></button>
         <button class="btn-accent" data-action="new-list"><i data-lucide="plus"></i><span class="btn-text">قائمة جديدة</span></button>
         <button class="icon-btn subtle" data-action="logout" aria-label="تسجيل الخروج" title="تسجيل الخروج"><i data-lucide="log-out"></i></button>
@@ -184,7 +191,7 @@ function renderListView(id) {
         <span class="list-icon sm" style="--c:${l.color}"><i data-lucide="${l.icon}"></i></span>
         <div class="header-titles">
           <h1 class="app-title">${esc(l.title)}</h1>
-          <span class="muted sm-text">${all.length} مهمة · ${doneCount} مكتملة</span>
+          <span class="muted sm-text">${all.length} مهمة · ${doneCount} مكتملة${currentUser?.role === 'admin' ? ` · ${esc(l.userEmail)}` : ''}</span>
         </div>
       </div>
       <div class="header-actions">
@@ -473,19 +480,130 @@ function startEditTask(el, id) {
   input.addEventListener('blur', commit);
 }
 
-/* ---------------- Auth gate ---------------- */
+/* ---------------- Admin users ---------------- */
 
-const AUTH_KEY = 'mytasks.auth';
-const AUTH_TTL = 3 * 24 * 60 * 60 * 1000; // 3 أيام
-
-function isAuthed() {
-  try {
-    const t = JSON.parse(localStorage.getItem(AUTH_KEY));
-    return !!t && Date.now() - t < AUTH_TTL;
-  } catch (e) {
-    return false;
+async function usersApi(path = '', method = 'GET', body) {
+  const res = await fetch(`/api/users${path}`, {
+    method,
+    headers: body ? { 'Content-Type': 'application/json' } : undefined,
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const error = new Error(data.error || 'request_failed');
+    error.status = res.status;
+    throw error;
   }
+  return data;
 }
+
+async function loadUsers() {
+  const data = await usersApi();
+  adminUsers = data.users;
+}
+
+function renderUsers() {
+  headerEl.innerHTML = `
+    <div class="header-inner">
+      <div class="header-start">
+        <button class="icon-btn" data-action="back" aria-label="رجوع"><i data-lucide="arrow-right"></i></button>
+        <div class="header-titles"><h1 class="app-title">إدارة المستخدمين</h1><span class="muted sm-text">${adminUsers.length} حساب</span></div>
+      </div>
+      <button class="btn-accent" data-action="new-user"><i data-lucide="user-plus"></i><span class="btn-text">مستخدم جديد</span></button>
+    </div>`;
+  mainEl.innerHTML = `
+    <div class="users-grid">
+      ${adminUsers.map((u) => `
+        <article class="user-card ${u.active ? '' : 'disabled'}">
+          <div class="user-card-head">
+            <span class="user-avatar"><i data-lucide="${u.role === 'admin' ? 'shield-check' : 'user'}"></i></span>
+            <div class="user-identity"><strong dir="ltr">${esc(u.email)}</strong><span>${u.role === 'admin' ? 'الأدمن الرئيسي' : (u.active ? 'حساب نشط' : 'حساب معطّل')}</span></div>
+          </div>
+          <div class="user-stats"><span>${u.listsCount} قائمة</span><span>${u.tasksCount} مهمة</span></div>
+          ${u.role !== 'admin' ? `<div class="user-actions">
+            <button class="btn-ghost" data-edit-user="${u.id}">تعديل</button>
+            <button class="btn-ghost" data-toggle-user="${u.id}">${u.active ? 'تعطيل' : 'تفعيل'}</button>
+            <button class="btn-danger" data-delete-user="${u.id}">حذف</button>
+          </div>` : ''}
+        </article>`).join('')}
+    </div>`;
+}
+
+function userErrorMessage(code) {
+  return ({
+    invalid_email: 'أدخل بريدًا إلكترونيًا صحيحًا.',
+    weak_password: 'يجب أن تتكون كلمة المرور من 8 أحرف على الأقل.',
+    email_exists: 'هذا البريد مستخدم بالفعل.',
+  })[code] || 'تعذر حفظ المستخدم. حاول مجددًا.';
+}
+
+function openUserModal(user = null) {
+  closeOverlay();
+  const bd = document.createElement('div');
+  bd.className = 'backdrop';
+  const m = document.createElement('div');
+  m.className = 'modal';
+  m.innerHTML = `
+    <h2>${user ? 'تعديل المستخدم' : 'إضافة مستخدم'}</h2>
+    <p class="muted">${user ? 'اترك كلمة المرور فارغة للإبقاء عليها كما هي.' : 'سيستخدم المستخدم هذه البيانات لتسجيل الدخول.'}</p>
+    <label class="field-label" for="user-email">البريد الإلكتروني</label>
+    <input id="user-email" class="text-input" type="email" dir="ltr" autocomplete="off" value="${esc(user?.email || '')}">
+    <label class="field-label" for="user-password">${user ? 'كلمة مرور جديدة (اختياري)' : 'كلمة المرور'}</label>
+    <input id="user-password" class="text-input" type="password" dir="ltr" autocomplete="new-password" minlength="8">
+    <p class="login-error" id="user-form-error" hidden></p>
+    <div class="modal-actions"><button class="btn-ghost" data-x="cancel">إلغاء</button><button class="btn-accent" data-x="save">حفظ</button></div>`;
+  overlayRoot.append(bd, m);
+  const emailInput = m.querySelector('#user-email');
+  const passwordInput = m.querySelector('#user-password');
+  const errorEl = m.querySelector('#user-form-error');
+  const saveBtn = m.querySelector('[data-x="save"]');
+  const save = async () => {
+    if (saveBtn.disabled) return;
+    saveBtn.disabled = true;
+    errorEl.hidden = true;
+    try {
+      const body = { email: emailInput.value.trim() };
+      if (passwordInput.value || !user) body.password = passwordInput.value;
+      await usersApi(user ? `?id=${encodeURIComponent(user.id)}` : '', user ? 'PATCH' : 'POST', body);
+      await loadUsers();
+      closeOverlay();
+      render();
+    } catch (e) {
+      errorEl.textContent = userErrorMessage(e.message);
+      errorEl.hidden = false;
+      saveBtn.disabled = false;
+    }
+  };
+  bd.addEventListener('click', closeOverlay);
+  m.querySelector('[data-x="cancel"]').addEventListener('click', closeOverlay);
+  saveBtn.addEventListener('click', save);
+  m.addEventListener('keydown', (e) => { if (e.key === 'Enter') save(); });
+  emailInput.focus();
+}
+
+async function toggleUser(id) {
+  const user = adminUsers.find((u) => u.id === id);
+  if (!user) return;
+  await usersApi(`?id=${encodeURIComponent(id)}`, 'PATCH', { active: !user.active });
+  await loadUsers();
+  render();
+}
+
+function deleteUser(id) {
+  const user = adminUsers.find((u) => u.id === id);
+  if (!user) return;
+  openConfirm({
+    title: 'حذف المستخدم؟',
+    message: `سيتم حذف حساب ${user.email} وجميع قوائمه ومهامه نهائيًا.`,
+    onConfirm: async () => {
+      await usersApi(`?id=${encodeURIComponent(id)}`, 'DELETE');
+      await loadUsers();
+      render();
+    },
+  });
+}
+
+/* ---------------- Auth gate ---------------- */
 
 function renderLogin() {
   headerEl.innerHTML = '';
@@ -494,42 +612,59 @@ function renderLogin() {
       <div class="login-card">
         <div class="empty-icon"><i data-lucide="lock"></i></div>
         <h1 class="login-title">مهامي</h1>
-        <p class="muted">أدخل الرمز السري للمتابعة</p>
-        <input id="login-code" class="pin-input" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="8" autocomplete="off" placeholder="••••" aria-label="الرمز السري">
-        <button class="btn-accent lg login-btn" id="login-btn">دخول</button>
+        <p class="muted">سجّل الدخول للوصول إلى قوائمك ومهامك</p>
+        <label class="login-label" for="login-email">البريد الإلكتروني</label>
+        <input id="login-email" class="text-input login-input" type="email" dir="ltr" autocomplete="username" placeholder="name@example.com">
+        <label class="login-label" for="login-password">كلمة المرور</label>
+        <div class="password-field">
+          <input id="login-password" class="text-input login-input" type="password" dir="ltr" autocomplete="current-password" placeholder="••••••••">
+          <button class="password-toggle" type="button" id="password-toggle" aria-label="إظهار كلمة المرور"><i data-lucide="eye"></i></button>
+        </div>
+        <button class="btn-accent lg login-btn" id="login-btn">تسجيل الدخول</button>
         <p class="login-error" id="login-error" hidden></p>
       </div>
     </div>`;
   refreshIcons();
 
-  const input = document.getElementById('login-code');
+  const emailInput = document.getElementById('login-email');
+  const passwordInput = document.getElementById('login-password');
   const btn = document.getElementById('login-btn');
   const err = document.getElementById('login-error');
-  input.focus();
+  emailInput.focus();
 
   const submit = async () => {
-    const code = input.value.trim();
-    if (!code || btn.disabled) return;
+    const email = emailInput.value.trim();
+    const password = passwordInput.value;
+    if (!email || !password || btn.disabled) {
+      err.textContent = 'أدخل البريد الإلكتروني وكلمة المرور.';
+      err.hidden = false;
+      return;
+    }
     btn.disabled = true;
     err.hidden = true;
     try {
       const res = await fetch('/api/auth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code }),
+        body: JSON.stringify({ email, password }),
       });
       if (res.ok) {
-        localStorage.setItem(AUTH_KEY, JSON.stringify(Date.now()));
-        startApp();
+        const data = await res.json();
+        await startApp(data.user);
         return;
       }
-      err.textContent = 'الرمز غير صحيح، حاول مجددًا';
+      const data = await res.json().catch(() => ({}));
+      err.textContent = data.error === 'invalid_credentials'
+        ? 'البريد الإلكتروني أو كلمة المرور غير صحيحة.'
+        : data.error === 'admin_not_initialized'
+          ? 'حساب الأدمن غير مهيأ بعد. أضف ADMIN_PASSWORD في إعدادات الخادم.'
+          : 'تعذر تسجيل الدخول. حاول مجددًا.';
     } catch (e) {
       err.textContent = 'تعذر الاتصال بالخادم، تحقق من الإنترنت';
     }
     err.hidden = false;
-    input.value = '';
-    input.focus();
+    passwordInput.value = '';
+    passwordInput.focus();
     const card = document.querySelector('.login-card');
     card.classList.remove('shake');
     void card.offsetWidth;
@@ -538,17 +673,44 @@ function renderLogin() {
   };
 
   btn.addEventListener('click', submit);
-  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); });
+  document.getElementById('password-toggle').addEventListener('click', (e) => {
+    passwordInput.type = passwordInput.type === 'password' ? 'text' : 'password';
+    e.currentTarget.innerHTML = `<i data-lucide="${passwordInput.type === 'password' ? 'eye' : 'eye-off'}"></i>`;
+    refreshIcons();
+  });
+  passwordInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); });
 }
 
-function startApp() {
-  store.subscribe(render);
-  store.init();
+let subscribed = false;
+async function startApp(user) {
+  currentUser = user;
+  store.setCurrentUser(user);
+  if (!subscribed) {
+    store.subscribe(render);
+    subscribed = true;
+  }
+  try {
+    await store.init();
+  } catch (e) {
+    currentUser = null;
+    renderLogin();
+  }
+}
+
+async function boot() {
+  try {
+    const res = await fetch('/api/auth');
+    if (!res.ok) throw new Error('unauthorized');
+    const data = await res.json();
+    await startApp(data.user);
+  } catch (e) {
+    renderLogin();
+  }
 }
 
 /* ---------------- Global event delegation ---------------- */
 
-function handleAction(action, el) {
+async function handleAction(action, el) {
   switch (action) {
     case 'toggle-search':
       searchOpen = !searchOpen;
@@ -563,6 +725,14 @@ function handleAction(action, el) {
       break;
     case 'new-list':
       openListModal();
+      break;
+    case 'manage-users':
+      await loadUsers();
+      location.hash = '#/users';
+      render();
+      break;
+    case 'new-user':
+      openUserModal();
       break;
     case 'back':
       location.hash = '';
@@ -580,8 +750,10 @@ function handleAction(action, el) {
       store.resetListTasks(el.dataset.id);
       break;
     case 'logout':
-      localStorage.removeItem(AUTH_KEY);
-      location.reload();
+      await fetch('/api/auth', { method: 'DELETE' }).catch(() => {});
+      currentUser = null;
+      location.hash = '';
+      renderLogin();
       break;
     case 'toggle-completed':
       completedOpen = !completedOpen;
@@ -595,6 +767,15 @@ document.addEventListener('click', (e) => {
 
   const actionEl = t.closest('[data-action]');
   if (actionEl) { handleAction(actionEl.dataset.action, actionEl); return; }
+
+  const editUser = t.closest('[data-edit-user]');
+  if (editUser) { openUserModal(adminUsers.find((u) => u.id === editUser.dataset.editUser)); return; }
+
+  const toggleUserEl = t.closest('[data-toggle-user]');
+  if (toggleUserEl) { toggleUser(toggleUserEl.dataset.toggleUser).catch(console.error); return; }
+
+  const deleteUserEl = t.closest('[data-delete-user]');
+  if (deleteUserEl) { deleteUser(deleteUserEl.dataset.deleteUser); return; }
 
   const cardMenu = t.closest('[data-card-menu]');
   if (cardMenu) { openListMenu(cardMenu, cardMenu.dataset.cardMenu); return; }
@@ -649,5 +830,10 @@ window.addEventListener('hashchange', () => {
   render();
 });
 
-if (isAuthed()) startApp();
-else renderLogin();
+window.addEventListener('auth-required', () => {
+  currentUser = null;
+  location.hash = '';
+  renderLogin();
+});
+
+boot();
