@@ -7,7 +7,7 @@ const rowToList = (r) => ({
   userId: r.user_id, userEmail: r.user_email,
 });
 const rowToTask = (r) => ({
-  id: r.id, listId: r.list_id, title: r.title, status: r.status, order: r.order,
+  id: r.id, listId: r.list_id, title: r.title, note: r.note || '', status: r.status, order: r.order,
   createdAt: Number(r.created_at), updatedAt: Number(r.updated_at),
   userId: r.user_id, userEmail: r.user_email,
 });

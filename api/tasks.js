@@ -37,8 +37,8 @@ export default async function handler(req, res) {
       if (!lists.length) return json(res, 404, { error: 'not_found' });
       const ownerId = lists[0].user_id;
       await db`
-        INSERT INTO tasks (id, list_id, user_id, title, status, "order", created_at, updated_at)
-        VALUES (${t.id}, ${t.listId}, ${ownerId}, ${String(t.title).trim()}, ${t.status || 'not_started'},
+        INSERT INTO tasks (id, list_id, user_id, title, note, status, "order", created_at, updated_at)
+        VALUES (${t.id}, ${t.listId}, ${ownerId}, ${String(t.title).trim()}, ${String(t.note || '').slice(0, 4000)}, ${t.status || 'not_started'},
           ${Number(t.order) || 0}, ${Number(t.createdAt) || Date.now()}, ${Number(t.updatedAt) || Date.now()})`;
       return json(res, 201, { ok: true });
     }
@@ -52,7 +52,8 @@ export default async function handler(req, res) {
     if (req.method === 'PATCH') {
       const c = current[0];
       await db`
-        UPDATE tasks SET title = ${body.title ?? c.title}, status = ${body.status ?? c.status}, updated_at = ${Date.now()}
+        UPDATE tasks SET title = ${body.title ?? c.title}, note = ${body.note === undefined ? c.note : String(body.note).slice(0, 4000)},
+          status = ${body.status ?? c.status}, updated_at = ${Date.now()}
         WHERE id = ${id} AND user_id = ${current[0].user_id}`;
       return json(res, 200, { ok: true });
     }

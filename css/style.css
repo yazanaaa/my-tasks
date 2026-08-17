@@ -628,6 +628,40 @@ button:focus-visible, input:focus-visible { outline: 2px solid rgba(255, 214, 10
   text-decoration-color: rgba(255, 255, 255, 0.3);
 }
 
+.task-note-btn.has-note {
+  color: var(--accent);
+  background: var(--accent-dim);
+  border-color: rgba(255, 214, 10, .2);
+}
+.task-note-modal-head { display: flex; align-items: center; gap: 12px; }
+.task-note-modal-head > span {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+.task-note-modal-head svg { width: 20px; height: 20px; }
+.task-note-modal-head h2 { margin: 0; }
+.task-note-modal-head p { margin: 2px 0 0; font-size: 12px; }
+.task-note-input {
+  width: 100%;
+  min-height: 150px;
+  resize: vertical;
+  padding: 13px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  outline: none;
+  background: var(--card);
+  color: var(--text);
+  font: 14px/1.8 'IBM Plex Sans Arabic', sans-serif;
+}
+.task-note-input:focus { border-color: rgba(255, 214, 10, .5); }
+
 .status-badge {
   flex: 0 0 auto;
   display: inline-flex;

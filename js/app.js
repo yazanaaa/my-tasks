@@ -1,6 +1,7 @@
 import { store } from './store.js';
 import { LIST_COLORS, LIST_ICONS, STATUSES, STATUS_ORDER } from './constants.js';
 import { makeSortable } from './dnd.js';
+import { createNotesApp } from './notes.js';
 
 const headerEl = document.getElementById('header');
 const mainEl = document.getElementById('main');
@@ -17,11 +18,53 @@ let filter = 'all';
 let completedOpen = false;
 let currentUser = null;
 let adminUsers = [];
+let recentNotes = [];
+let recentNotesReady = false;
+let recentNotesLoading = null;
+
+const notePlainText = (html = '') => {
+  const doc = new DOMParser().parseFromString(String(html), 'text/html');
+  return (doc.body.textContent || '').replace(/\s+/g, ' ').trim();
+};
+
+async function loadRecentNotes(force = false) {
+  if (!currentUser) return;
+  if (recentNotesReady && !force) return;
+  if (recentNotesLoading) return recentNotesLoading;
+  recentNotesLoading = fetch('/api/notes?recent=true&include_deleted=true&include_folders=true')
+    .then(async (response) => {
+      if (!response.ok) throw new Error('notes_load_failed');
+      const data = await response.json();
+      recentNotes = (data.notes || []).filter((note) => !note.isDeleted).slice(0, 3);
+      notesApp.hydrate(data);
+      recentNotesReady = true;
+    })
+    .catch(() => {
+      recentNotes = [];
+      recentNotesReady = true;
+    })
+    .finally(() => { recentNotesLoading = null; });
+  return recentNotesLoading;
+}
+
+const notesApp = createNotesApp({
+  headerEl,
+  mainEl,
+  overlayRoot,
+  getCurrentUser: () => currentUser,
+  getAdminUser: (id) => adminUsers.find((user) => user.id === id),
+  onExit: () => { location.hash = ''; },
+});
 
 /* ---------------- Routing ---------------- */
 
 function currentRoute() {
   if (location.hash === '#/users' && currentUser?.role === 'admin') return { view: 'users' };
+  if (location.hash === '#/notes') return { view: 'notes', userId: null };
+  const activeNote = location.hash.match(/^#\/notes\/note\/([^/]+)$/);
+  if (activeNote) return { view: 'notes', userId: null, noteId: decodeURIComponent(activeNote[1]) };
+  const notesUser = location.hash.match(/^#\/notes\/user\/(.+)$/);
+  if (notesUser && currentUser?.role === 'admin') return { view: 'notes', userId: notesUser[1] };
   const m = location.hash.match(/^#\/list\/(.+)$/);
   if (m && store.getList(m[1])) return { view: 'list', id: m[1] };
   return { view: 'home' };
@@ -30,6 +73,13 @@ function currentRoute() {
 function render() {
   const activeId = document.activeElement?.id;
   const r = currentRoute();
+  if (r.view === 'notes') {
+    notesApp.open({ targetUserId: r.userId, activeNoteId: r.noteId }).catch((error) => {
+      console.error(error);
+      mainEl.innerHTML = '<p class="muted center pad">تعذر تحميل الملاحظات.</p>';
+    });
+    return;
+  }
   if (r.view === 'list') renderListView(r.id);
   else if (r.view === 'users') renderUsers();
   else renderHome();
@@ -118,6 +168,38 @@ function goalsSection() {
     </section>`;
 }
 
+function homeNotesSection() {
+  const cards = recentNotes.map((note) => {
+    const preview = notePlainText(note.content);
+    return `
+      <button class="home-note-card" data-action="open-note" data-id="${note.id}">
+        <span class="home-note-top">
+          <span class="home-note-icon"><i data-lucide="notebook-pen"></i></span>
+          <span class="home-note-more"><i data-lucide="more-horizontal"></i></span>
+        </span>
+        <span class="home-note-copy">
+          <strong>${esc(note.title || 'ملاحظة جديدة')}</strong>
+          <small>${esc(preview || 'لا يوجد نص بعد')}</small>
+        </span>
+        <span class="home-note-bottom">
+          <span class="home-note-line"></span>
+          ${note.isPinned ? '<i class="home-note-pin" data-lucide="pin"></i>' : '<i data-lucide="grip-vertical"></i>'}
+        </span>
+      </button>`;
+  }).join('');
+  return `
+    <section class="shortcuts-section" aria-labelledby="home-notes-title">
+      <div class="shortcuts-heading home-notes-heading">
+        <div><span class="shortcuts-kicker">آخر ما كتبت</span><h2 id="home-notes-title">الملاحظات</h2></div>
+        <button class="btn-accent" data-action="new-home-note"><i data-lucide="plus"></i><span class="btn-text">إضافة ملاحظة</span></button>
+      </div>
+      <div class="home-notes-grid">
+        ${!recentNotesReady ? '<div class="home-notes-status">جارٍ تحميل الملاحظات…</div>' : cards || '<div class="home-notes-status">لا توجد ملاحظات بعد. أضف أول ملاحظة من هنا.</div>'}
+      </div>
+      ${recentNotes.length ? '<button class="home-notes-all" data-action="open-notes">عرض كل الملاحظات <i data-lucide="arrow-left"></i></button>' : ''}
+    </section>`;
+}
+
 function renderHome() {
   const lists = store.lists;
 
@@ -129,6 +211,7 @@ function renderHome() {
       </div>
       <div class="header-actions">
         ${currentUser?.role === 'admin' ? '<button class="icon-btn" data-action="manage-users" aria-label="إدارة المستخدمين" title="إدارة المستخدمين"><i data-lucide="users"></i></button>' : ''}
+        <button class="btn-ghost notes-nav-link" data-action="open-notes" aria-label="الملاحظات"><i data-lucide="notebook-pen"></i><span>الملاحظات</span></button>
         <button class="icon-btn" data-action="toggle-search" aria-label="بحث"><i data-lucide="search"></i></button>
         <button class="btn-accent" data-action="new-list"><i data-lucide="plus"></i><span class="btn-text">قائمة جديدة</span></button>
         <button class="icon-btn subtle" data-action="logout" aria-label="تسجيل الخروج" title="تسجيل الخروج"><i data-lucide="log-out"></i></button>
@@ -162,7 +245,7 @@ function renderHome() {
       <button class="btn-accent lg" data-action="new-list"><i data-lucide="plus"></i> إنشاء قائمة</button>
     </div>`;
 
-  mainEl.innerHTML = searchHtml + `<div id="home-content" ${searchQuery.trim() ? 'hidden' : ''}>${contentHtml}${goalsSection()}</div>`;
+  mainEl.innerHTML = searchHtml + `<div id="home-content" ${searchQuery.trim() ? 'hidden' : ''}>${contentHtml}${homeNotesSection()}${goalsSection()}</div>`;
 
   if (searchOpen) updateSearchResults();
   const grid = document.getElementById('lists-grid');
@@ -207,6 +290,7 @@ function taskRow(t) {
       <button class="check-btn" data-toggle-check="${t.id}" aria-label="تبديل الإنجاز">${t.status === 'completed' ? '<i data-lucide="check"></i>' : ''}</button>
       <span class="task-title" data-edit="${t.id}">${esc(t.title)}</span>
       <button class="status-badge" data-status="${t.id}" style="--sc:${s.color}"><span class="dot"></span><span class="badge-label">${s.label}</span></button>
+      <button class="icon-btn subtle sm task-note-btn ${t.note ? 'has-note' : ''}" data-task-note="${t.id}" aria-label="${t.note ? 'عرض ملاحظة المهمة' : 'إضافة ملاحظة للمهمة'}" title="${t.note ? esc(t.note) : 'إضافة ملاحظة'}"><i data-lucide="sticky-note"></i></button>
       <button class="icon-btn subtle sm" data-task-menu="${t.id}" aria-label="خيارات المهمة"><i data-lucide="more-horizontal"></i></button>
     </div>`;
 }
@@ -370,6 +454,47 @@ function openTaskMenu(anchor, id) {
     { icon: 'refresh-cw', label: 'تغيير الحالة', onClick: () => openStatusPicker(anchor, id) },
     { icon: 'trash-2', label: 'حذف', danger: true, onClick: () => store.deleteTask(id) },
   ]));
+}
+
+function openTaskNoteModal(task) {
+  if (!task) return;
+  closeOverlay();
+  const bd = document.createElement('div');
+  bd.className = 'backdrop';
+  bd.addEventListener('click', closeOverlay);
+  const modal = document.createElement('div');
+  modal.className = 'modal task-note-modal';
+  modal.innerHTML = `
+    <div class="task-note-modal-head">
+      <span><i data-lucide="sticky-note"></i></span>
+      <div><h2>ملاحظة المهمة</h2><p class="muted">${esc(task.title)}</p></div>
+    </div>
+    <label class="field-label" for="task-note-input">اكتب ما تريد تذكّره</label>
+    <textarea id="task-note-input" class="task-note-input" maxlength="4000" placeholder="مثال: تواصل مع العميل قبل البدء…">${esc(task.note || '')}</textarea>
+    <div class="modal-actions">
+      <button class="btn-ghost" data-x="cancel">إلغاء</button>
+      ${task.note ? '<button class="btn-danger" data-x="remove">حذف الملاحظة</button>' : ''}
+      <button class="btn-accent" data-x="save">حفظ</button>
+    </div>`;
+  overlayRoot.append(bd, modal);
+  document.body.style.overflow = 'hidden';
+  refreshIcons();
+  const input = modal.querySelector('#task-note-input');
+  const save = () => {
+    store.updateTask(task.id, { note: input.value.trim() });
+    closeOverlay();
+  };
+  modal.querySelector('[data-x="cancel"]').addEventListener('click', closeOverlay);
+  modal.querySelector('[data-x="save"]').addEventListener('click', save);
+  modal.querySelector('[data-x="remove"]')?.addEventListener('click', () => {
+    store.updateTask(task.id, { note: '' });
+    closeOverlay();
+  });
+  input.addEventListener('keydown', (event) => {
+    if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') save();
+  });
+  input.focus();
+  input.setSelectionRange(input.value.length, input.value.length);
 }
 
 function openListMenu(anchor, id) {
@@ -652,12 +777,14 @@ function renderUsers() {
             <span class="user-avatar"><i data-lucide="${u.role === 'admin' ? 'shield-check' : 'user'}"></i></span>
             <div class="user-identity"><strong dir="ltr">${esc(u.email)}</strong><span>${u.role === 'admin' ? 'الأدمن الرئيسي' : (u.active ? 'حساب نشط' : 'حساب معطّل')}</span></div>
           </div>
-          <div class="user-stats"><span>${u.listsCount} قائمة</span><span>${u.tasksCount} مهمة</span><span>${u.goalsCount || 0} هدف</span></div>
-          ${u.role !== 'admin' ? `<div class="user-actions">
+          <div class="user-stats"><span>${u.listsCount} قائمة</span><span>${u.tasksCount} مهمة</span><span>${u.goalsCount || 0} هدف</span><span>${u.notesCount || 0} ملاحظة</span></div>
+          <div class="user-actions">
+            <button class="btn-ghost" data-view-user-notes="${u.id}">الملاحظات</button>
+          ${u.role !== 'admin' ? `
             <button class="btn-ghost" data-edit-user="${u.id}">تعديل</button>
             <button class="btn-ghost" data-toggle-user="${u.id}">${u.active ? 'تعطيل' : 'تفعيل'}</button>
             <button class="btn-danger" data-delete-user="${u.id}">حذف</button>
-          </div>` : ''}
+          ` : ''}</div>
         </article>`).join('')}
     </div>`;
 }
@@ -700,7 +827,7 @@ function openUserModal(user = null) {
       const data = await usersApi(user ? `?id=${encodeURIComponent(user.id)}` : '', user ? 'PATCH' : 'POST', body);
       if (user) {
         adminUsers = adminUsers.map((item) => item.id === user.id
-          ? { ...item, ...data.user, listsCount: item.listsCount, tasksCount: item.tasksCount, goalsCount: item.goalsCount }
+          ? { ...item, ...data.user, listsCount: item.listsCount, tasksCount: item.tasksCount, goalsCount: item.goalsCount, notesCount: item.notesCount }
           : item);
       } else {
         adminUsers.push(data.user);
@@ -725,7 +852,7 @@ async function toggleUser(id) {
   if (!user) return;
   const data = await usersApi(`?id=${encodeURIComponent(id)}`, 'PATCH', { active: !user.active });
   adminUsers = adminUsers.map((item) => item.id === id
-    ? { ...item, ...data.user, listsCount: item.listsCount, tasksCount: item.tasksCount, goalsCount: item.goalsCount }
+    ? { ...item, ...data.user, listsCount: item.listsCount, tasksCount: item.tasksCount, goalsCount: item.goalsCount, notesCount: item.notesCount }
     : item);
   render();
 }
@@ -825,6 +952,8 @@ function renderLogin() {
 let subscribed = false;
 async function startApp(user) {
   currentUser = user;
+  recentNotes = [];
+  recentNotesReady = false;
   store.setCurrentUser(user);
   if (!subscribed) {
     store.subscribe(render);
@@ -832,6 +961,8 @@ async function startApp(user) {
   }
   try {
     await store.init();
+    await loadRecentNotes();
+    render();
   } catch (e) {
     currentUser = null;
     renderLogin();
@@ -875,6 +1006,24 @@ async function handleAction(action, el) {
       location.hash = '#/users';
       render();
       break;
+    case 'open-notes':
+      location.hash = '#/notes';
+      break;
+    case 'open-note':
+      location.hash = `#/notes/note/${encodeURIComponent(el.dataset.id)}`;
+      break;
+    case 'new-home-note': {
+      const response = await fetch('/api/notes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: '', content: '' }),
+      });
+      if (!response.ok) break;
+      const data = await response.json();
+      recentNotes = [data.note, ...recentNotes].slice(0, 3);
+      location.hash = `#/notes/note/${encodeURIComponent(data.note.id)}`;
+      break;
+    }
     case 'new-user':
       openUserModal();
       break;
@@ -896,6 +1045,8 @@ async function handleAction(action, el) {
     case 'logout':
       await fetch('/api/auth', { method: 'DELETE' }).catch(() => {});
       currentUser = null;
+      recentNotes = [];
+      recentNotesReady = false;
       location.hash = '';
       renderLogin();
       break;
@@ -921,6 +1072,9 @@ document.addEventListener('click', (e) => {
   const deleteUserEl = t.closest('[data-delete-user]');
   if (deleteUserEl) { deleteUser(deleteUserEl.dataset.deleteUser); return; }
 
+  const viewUserNotes = t.closest('[data-view-user-notes]');
+  if (viewUserNotes) { location.hash = `#/notes/user/${viewUserNotes.dataset.viewUserNotes}`; return; }
+
   const cardMenu = t.closest('[data-card-menu]');
   if (cardMenu) { openListMenu(cardMenu, cardMenu.dataset.cardMenu); return; }
 
@@ -929,6 +1083,9 @@ document.addEventListener('click', (e) => {
 
   const taskMenu = t.closest('[data-task-menu]');
   if (taskMenu) { openTaskMenu(taskMenu, taskMenu.dataset.taskMenu); return; }
+
+  const taskNote = t.closest('[data-task-note]');
+  if (taskNote) { openTaskNoteModal(store.getTask(taskNote.dataset.taskNote)); return; }
 
   const checkBtn = t.closest('[data-toggle-check]');
   if (checkBtn) {
@@ -971,10 +1128,17 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-window.addEventListener('hashchange', () => {
+window.addEventListener('hashchange', async () => {
+  if (notesApp.isActive()) await notesApp.flush();
+  const refreshHomeNotes = !location.hash.startsWith('#/notes') && currentRoute().view === 'home';
   filter = 'all';
   closeOverlay();
   render();
+  if (refreshHomeNotes) {
+    loadRecentNotes(true).then(() => {
+      if (currentRoute().view === 'home') render();
+    });
+  }
 });
 
 window.addEventListener('auth-required', () => {

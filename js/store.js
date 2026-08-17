@@ -109,6 +109,7 @@ export const store = {
     const list = {
       id: crypto.randomUUID(),
       title,
+      note: '',
       color,
       icon,
       recurring,
