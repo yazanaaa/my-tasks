@@ -20,7 +20,7 @@ export function ensureSchema() {
       const db = sql();
       try {
         const version = await db`SELECT value FROM app_meta WHERE key = 'schema_version' LIMIT 1`;
-        if (version[0]?.value === '4') return;
+        if (version[0]?.value === '5') return;
       } catch (e) {
         // First run (or upgrade from the pre-versioned schema): run the migration below.
       }
@@ -121,7 +121,18 @@ export function ensureSchema() {
       }
       const admin = await db`SELECT id FROM users WHERE email = ${adminEmail} LIMIT 1`;
       if (admin.length) {
-        await db`UPDATE users SET role = 'admin', active = TRUE WHERE id = ${admin[0].id}`;
+        // On a schema upgrade, ADMIN_PASSWORD is the source of truth for the primary admin.
+        // This makes an intentional password reset take effect for an already-created account.
+        if (adminPassword) {
+          const passwordHash = await hashPassword(adminPassword);
+          await db`
+            UPDATE users
+            SET password_hash = ${passwordHash}, role = 'admin', active = TRUE, updated_at = ${Date.now()}
+            WHERE id = ${admin[0].id}`;
+          await db`DELETE FROM sessions WHERE user_id = ${admin[0].id}`;
+        } else {
+          await db`UPDATE users SET role = 'admin', active = TRUE WHERE id = ${admin[0].id}`;
+        }
         await db`UPDATE lists SET user_id = ${admin[0].id} WHERE user_id IS NULL`;
         await db`
           UPDATE tasks t SET user_id = l.user_id
@@ -129,7 +140,7 @@ export function ensureSchema() {
       }
       await db`DELETE FROM sessions WHERE expires_at <= ${Date.now()}`;
       await db`
-        INSERT INTO app_meta (key, value) VALUES ('schema_version', '4')
+        INSERT INTO app_meta (key, value) VALUES ('schema_version', '5')
         ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`;
     })().catch((e) => {
       schemaReady = null;
