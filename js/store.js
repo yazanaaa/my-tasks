@@ -65,6 +65,10 @@ export const store = {
 
   async init() {
     const data = await api('/api/lists', 'GET');
+    this.hydrate(data);
+  },
+
+  hydrate(data) {
     state = { lists: data.lists || [], tasks: data.tasks || [], goals: data.goals || [] };
     backend = 'api';
     // Remove the legacy shared-device cache; authenticated data must remain server-scoped.

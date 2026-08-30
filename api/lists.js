@@ -27,18 +27,21 @@ export default async function handler(req, res) {
     const id = req.query?.id ?? new URL(req.url, 'http://x').searchParams.get('id');
 
     if (req.method === 'GET') {
-      const [lists, tasks, goals] = await Promise.all([
+      // Send the three independent reads as one database transaction. With Neon,
+      // this avoids paying a separate network round-trip for lists, tasks, and goals.
+      const [lists, tasks, goals] = await db.transaction((tx) => [
         user.role === 'admin'
-          ? db`SELECT l.*, u.email AS user_email FROM lists l JOIN users u ON u.id = l.user_id`
-          : db`SELECT l.*, u.email AS user_email FROM lists l JOIN users u ON u.id = l.user_id WHERE l.user_id = ${user.id}`,
+          ? tx`SELECT l.*, u.email AS user_email FROM lists l JOIN users u ON u.id = l.user_id`
+          : tx`SELECT l.*, u.email AS user_email FROM lists l JOIN users u ON u.id = l.user_id WHERE l.user_id = ${user.id}`,
         user.role === 'admin'
-          ? db`SELECT t.*, u.email AS user_email FROM tasks t JOIN users u ON u.id = t.user_id`
-          : db`SELECT t.*, u.email AS user_email FROM tasks t JOIN users u ON u.id = t.user_id WHERE t.user_id = ${user.id}`,
+          ? tx`SELECT t.*, u.email AS user_email FROM tasks t JOIN users u ON u.id = t.user_id`
+          : tx`SELECT t.*, u.email AS user_email FROM tasks t JOIN users u ON u.id = t.user_id WHERE t.user_id = ${user.id}`,
         user.role === 'admin'
-          ? db`SELECT * FROM goals`
-          : db`SELECT * FROM goals WHERE user_id = ${user.id}`,
+          ? tx`SELECT * FROM goals`
+          : tx`SELECT * FROM goals WHERE user_id = ${user.id}`,
       ]);
       return json(res, 200, {
+        user: { id: user.id, email: user.email, role: user.role },
         lists: lists.map(rowToList), tasks: tasks.map(rowToTask), goals: goals.map(rowToGoal),
       });
     }

@@ -31,12 +31,13 @@ async function loadRecentNotes(force = false) {
   if (!currentUser) return;
   if (recentNotesReady && !force) return;
   if (recentNotesLoading) return recentNotesLoading;
-  recentNotesLoading = fetch('/api/notes?recent=true&include_deleted=true&include_folders=true')
+  // The home page only renders three previews. Fetching every note (and its full
+  // content) here made entering the app wait on an unnecessarily large request.
+  recentNotesLoading = fetch('/api/notes?recent=true&limit=3')
     .then(async (response) => {
       if (!response.ok) throw new Error('notes_load_failed');
       const data = await response.json();
-      recentNotes = (data.notes || []).filter((note) => !note.isDeleted).slice(0, 3);
-      notesApp.hydrate(data);
+      recentNotes = data.notes || [];
       recentNotesReady = true;
     })
     .catch(() => {
@@ -950,7 +951,7 @@ function renderLogin() {
 }
 
 let subscribed = false;
-async function startApp(user) {
+async function startApp(user, initialData = null) {
   currentUser = user;
   recentNotes = [];
   recentNotesReady = false;
@@ -960,9 +961,14 @@ async function startApp(user) {
     subscribed = true;
   }
   try {
-    await store.init();
-    await loadRecentNotes();
+    if (initialData) store.hydrate(initialData);
+    else await store.init();
+    // Render the task workspace as soon as its primary data is ready. Notes are
+    // decorative previews on the home page, so they load in the background.
     render();
+    loadRecentNotes().then(() => {
+      if (currentRoute().view === 'home') render();
+    });
   } catch (e) {
     currentUser = null;
     renderLogin();
@@ -971,10 +977,12 @@ async function startApp(user) {
 
 async function boot() {
   try {
-    const res = await fetch('/api/auth');
+    // One authenticated bootstrap request is faster than checking the session and
+    // then requesting the workspace in a second round trip.
+    const res = await fetch('/api/lists');
     if (!res.ok) throw new Error('unauthorized');
     const data = await res.json();
-    await startApp(data.user);
+    await startApp(data.user, data);
   } catch (e) {
     renderLogin();
   }
