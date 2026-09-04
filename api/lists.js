@@ -2,7 +2,7 @@ import { sql, ensureSchema, json, readBody } from './_db.js';
 import { requireUser } from './_auth.js';
 
 const rowToList = (r) => ({
-  id: r.id, title: r.title, icon: r.icon, color: r.color, recurring: r.recurring,
+  id: r.id, title: r.title, icon: r.icon, color: r.color, recurring: r.recurring, section: r.section || 'tasks',
   pinned: r.pinned, order: r.order, createdAt: Number(r.created_at),
   userId: r.user_id, userEmail: r.user_email,
 });
@@ -59,9 +59,10 @@ export default async function handler(req, res) {
       const l = body.list;
       if (!l?.id || !String(l.title || '').trim()) return json(res, 400, { error: 'invalid_list' });
       await db`
-        INSERT INTO lists (id, user_id, title, icon, color, recurring, pinned, "order", created_at)
+        INSERT INTO lists (id, user_id, title, icon, color, recurring, pinned, "order", created_at, section)
         VALUES (${l.id}, ${user.id}, ${String(l.title).trim()}, ${l.icon || 'list'}, ${l.color || '#FFD60A'},
-          ${Boolean(l.recurring)}, ${Boolean(l.pinned)}, ${Number(l.order) || 0}, ${Number(l.createdAt) || Date.now()})`;
+          ${Boolean(l.recurring)}, ${Boolean(l.pinned)}, ${Number(l.order) || 0}, ${Number(l.createdAt) || Date.now()},
+          ${l.section === 'projects' ? 'projects' : 'tasks'})`;
       return json(res, 201, { ok: true });
     }
 
@@ -76,7 +77,8 @@ export default async function handler(req, res) {
       await db`
         UPDATE lists SET title = ${body.title ?? c.title}, icon = ${body.icon ?? c.icon},
           color = ${body.color ?? c.color}, recurring = ${body.recurring ?? c.recurring},
-          pinned = ${body.pinned ?? c.pinned}
+          pinned = ${body.pinned ?? c.pinned},
+          section = ${body.section === undefined ? c.section : (body.section === 'projects' ? 'projects' : 'tasks')}
         WHERE id = ${id} AND user_id = ${current[0].user_id}`;
       return json(res, 200, { ok: true });
     }

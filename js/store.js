@@ -4,7 +4,7 @@
 
 const STORAGE_KEY = 'mytasks.v1';
 
-let state = { lists: [], tasks: [], goals: [] };
+let state = { lists: [], tasks: [] };
 let backend = null; // 'api' | 'local'
 let currentUser = null;
 const listeners = new Set();
@@ -69,7 +69,7 @@ export const store = {
   },
 
   hydrate(data) {
-    state = { lists: data.lists || [], tasks: data.tasks || [], goals: data.goals || [] };
+    state = { lists: data.lists || [], tasks: data.tasks || [] };
     backend = 'api';
     // Remove the legacy shared-device cache; authenticated data must remain server-scoped.
     try { localStorage.removeItem(STORAGE_KEY); } catch (e) { /* ignore */ }
@@ -84,10 +84,6 @@ export const store = {
     return [...state.tasks];
   },
 
-  get goals() {
-    return [...state.goals].sort(byOrder);
-  },
-
   tasksOf(listId) {
     return state.tasks.filter((t) => t.listId === listId).sort(byOrder);
   },
@@ -100,16 +96,16 @@ export const store = {
     return state.tasks.find((t) => t.id === id);
   },
 
-  getGoal(id) {
-    return state.goals.find((g) => g.id === id);
-  },
-
   subscribe(fn) {
     listeners.add(fn);
     return () => listeners.delete(fn);
   },
 
-  addList({ title, color, icon, recurring = false }) {
+  listsOf(section) {
+    return this.lists.filter((l) => (l.section || 'tasks') === section);
+  },
+
+  addList({ title, color, icon, recurring = false, section = 'tasks' }) {
     const list = {
       id: crypto.randomUUID(),
       title,
@@ -117,6 +113,7 @@ export const store = {
       color,
       icon,
       recurring,
+      section,
       pinned: false,
       order: state.lists.length,
       createdAt: Date.now(),
@@ -207,35 +204,6 @@ export const store = {
     });
     if (backend === 'api') sync(api('/api/tasks', 'POST', { action: 'reset', listId }));
     else persistLocal();
-    emit();
-  },
-
-  addGoal(title, progress) {
-    const goal = {
-      id: crypto.randomUUID(),
-      title,
-      progress,
-      order: state.goals.length,
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-      userId: currentUser?.id,
-    };
-    state.goals.push(goal);
-    sync(api('/api/goals', 'POST', { goal }));
-    emit();
-  },
-
-  updateGoal(id, patch) {
-    const goal = state.goals.find((g) => g.id === id);
-    if (!goal) return;
-    Object.assign(goal, patch, { updatedAt: Date.now() });
-    sync(api(`/api/goals?id=${encodeURIComponent(id)}`, 'PATCH', patch));
-    emit();
-  },
-
-  deleteGoal(id) {
-    state.goals = state.goals.filter((g) => g.id !== id);
-    sync(api(`/api/goals?id=${encodeURIComponent(id)}`, 'DELETE'));
     emit();
   },
 };

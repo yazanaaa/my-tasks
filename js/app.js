@@ -1,7 +1,6 @@
 import { store } from './store.js';
 import { LIST_COLORS, LIST_ICONS, STATUSES, STATUS_ORDER } from './constants.js';
 import { makeSortable } from './dnd.js';
-import { createNotesApp } from './notes.js';
 
 const headerEl = document.getElementById('header');
 const mainEl = document.getElementById('main');
@@ -18,54 +17,11 @@ let filter = 'all';
 let completedOpen = false;
 let currentUser = null;
 let adminUsers = [];
-let recentNotes = [];
-let recentNotesReady = false;
-let recentNotesLoading = null;
-
-const notePlainText = (html = '') => {
-  const doc = new DOMParser().parseFromString(String(html), 'text/html');
-  return (doc.body.textContent || '').replace(/\s+/g, ' ').trim();
-};
-
-async function loadRecentNotes(force = false) {
-  if (!currentUser) return;
-  if (recentNotesReady && !force) return;
-  if (recentNotesLoading) return recentNotesLoading;
-  // The home page only renders three previews. Fetching every note (and its full
-  // content) here made entering the app wait on an unnecessarily large request.
-  recentNotesLoading = fetch('/api/notes?recent=true&limit=3')
-    .then(async (response) => {
-      if (!response.ok) throw new Error('notes_load_failed');
-      const data = await response.json();
-      recentNotes = data.notes || [];
-      recentNotesReady = true;
-    })
-    .catch(() => {
-      recentNotes = [];
-      recentNotesReady = true;
-    })
-    .finally(() => { recentNotesLoading = null; });
-  return recentNotesLoading;
-}
-
-const notesApp = createNotesApp({
-  headerEl,
-  mainEl,
-  overlayRoot,
-  getCurrentUser: () => currentUser,
-  getAdminUser: (id) => adminUsers.find((user) => user.id === id),
-  onExit: () => { location.hash = ''; },
-});
 
 /* ---------------- Routing ---------------- */
 
 function currentRoute() {
   if (location.hash === '#/users' && currentUser?.role === 'admin') return { view: 'users' };
-  if (location.hash === '#/notes') return { view: 'notes', userId: null };
-  const activeNote = location.hash.match(/^#\/notes\/note\/([^/]+)$/);
-  if (activeNote) return { view: 'notes', userId: null, noteId: decodeURIComponent(activeNote[1]) };
-  const notesUser = location.hash.match(/^#\/notes\/user\/(.+)$/);
-  if (notesUser && currentUser?.role === 'admin') return { view: 'notes', userId: notesUser[1] };
   const m = location.hash.match(/^#\/list\/(.+)$/);
   if (m && store.getList(m[1])) return { view: 'list', id: m[1] };
   return { view: 'home' };
@@ -74,13 +30,6 @@ function currentRoute() {
 function render() {
   const activeId = document.activeElement?.id;
   const r = currentRoute();
-  if (r.view === 'notes') {
-    notesApp.open({ targetUserId: r.userId, activeNoteId: r.noteId }).catch((error) => {
-      console.error(error);
-      mainEl.innerHTML = '<p class="muted center pad">تعذر تحميل الملاحظات.</p>';
-    });
-    return;
-  }
   if (r.view === 'list') renderListView(r.id);
   else if (r.view === 'users') renderUsers();
   else renderHome();
@@ -118,92 +67,42 @@ function listCard(l) {
     </article>`;
 }
 
-function goalColor(progress) {
-  if (progress >= 100) return '#30D158';
-  if (progress >= 70) return '#FFD60A';
-  if (progress >= 40) return '#FF9F0A';
-  return '#64D2FF';
-}
+const SECTIONS = {
+  tasks: { title: 'مهامي', kicker: 'قوائمك اليومية', addLabel: 'قائمة جديدة', emptyTitle: 'لا توجد قوائم حتى الآن', emptyBody: 'أنشئ أول قائمة وابدأ بتنظيم مهامك.', icon: 'list-plus' },
+  projects: { title: 'المشاريع', kicker: 'ما تعمل عليه', addLabel: 'مشروع جديد', emptyTitle: 'لا توجد مشاريع بعد', emptyBody: 'أضف أول مشروع وتابع خطواته.', icon: 'folder-plus' },
+};
 
-function goalCard(goal) {
-  const progress = Math.max(0, Math.min(100, Number(goal.progress) || 0));
-  const color = goalColor(progress);
-  const complete = progress === 100;
+function homeSection(key) {
+  const meta = SECTIONS[key];
+  const lists = store.listsOf(key);
+  const pinned = lists.filter((l) => l.pinned);
+  const others = lists.filter((l) => !l.pinned);
+  const body = lists.length ? `
+    ${pinned.length ? `
+      <h3 class="section-title pin-title"><i data-lucide="pin"></i> مثبتة</h3>
+      <div class="lists-grid" id="pinned-grid-${key}">${pinned.map(listCard).join('')}</div>` : ''}
+    ${pinned.length && others.length ? '<h3 class="section-title">القوائم</h3>' : ''}
+    <div class="lists-grid" id="lists-grid-${key}">
+      ${others.map(listCard).join('')}
+      <button class="add-card" data-action="new-list" data-section="${key}"><i data-lucide="plus"></i><span>${meta.addLabel}</span></button>
+    </div>` : `
+    <div class="empty">
+      <div class="empty-icon"><i data-lucide="${meta.icon}"></i></div>
+      <h2>${meta.emptyTitle}</h2>
+      <p>${meta.emptyBody}</p>
+      <button class="btn-accent lg" data-action="new-list" data-section="${key}"><i data-lucide="plus"></i> ${meta.addLabel}</button>
+    </div>`;
   return `
-    <article class="goal-card ${complete ? 'complete' : ''}" style="--goal-color:${color};--goal-progress:${progress}">
-      <div class="goal-card-header">
-        <span class="goal-symbol"><i data-lucide="target"></i></span>
-        <div class="goal-heading-copy">
-          <h3>${esc(goal.title)}</h3>
-          <span>الهدف</span>
-        </div>
-        <button class="icon-btn subtle sm" data-goal-menu="${goal.id}" aria-label="خيارات الهدف"><i data-lucide="more-horizontal"></i></button>
+    <section class="home-section" aria-labelledby="home-section-${key}">
+      <div class="home-section-heading">
+        <div><span class="home-section-kicker">${meta.kicker}</span><h2 id="home-section-${key}">${meta.title}</h2></div>
+        <button class="btn-accent" data-action="new-list" data-section="${key}"><i data-lucide="plus"></i><span class="btn-text">${meta.addLabel}</span></button>
       </div>
-      <div class="goal-value-row" aria-label="نسبة الإنجاز ${progress}%">
-        <strong class="goal-percent">${progress}<small>%</small></strong>
-        <span class="goal-state ${complete ? 'done' : ''}">${complete ? '<i data-lucide="check"></i> مكتمل' : 'نسبة الإنجاز'}</span>
-      </div>
-      <div class="goal-progress-track" aria-hidden="true"><div style="width:${progress}%"></div></div>
-      <div class="goal-card-status">
-        <span>التقدّم الحالي</span>
-        <strong>${complete ? 'تم إنجاز الهدف' : `${100 - progress}% متبقية`}</strong>
-      </div>
-    </article>`;
-}
-
-function goalsSection() {
-  const goals = store.goals;
-  return `
-    <section class="goals-section" aria-labelledby="goals-title">
-      <div class="goals-heading">
-        <div><span class="goals-kicker">تقدّمك</span><h2 id="goals-title">الأهداف</h2></div>
-        <span class="goals-count">${goals.length}</span>
-      </div>
-      <div class="goals-grid">
-        ${goals.map(goalCard).join('')}
-        <button class="add-goal-card" data-action="new-goal">
-          <span class="add-goal-mark"><i data-lucide="plus"></i></span>
-          <span class="add-goal-copy"><strong>إضافة هدف</strong><small>إنشاء هدف جديد</small></span>
-        </button>
-      </div>
-    </section>`;
-}
-
-function homeNotesSection() {
-  const cards = recentNotes.map((note) => {
-    const preview = notePlainText(note.content);
-    return `
-      <button class="home-note-card" data-action="open-note" data-id="${note.id}">
-        <span class="home-note-top">
-          <span class="home-note-icon"><i data-lucide="notebook-pen"></i></span>
-          <span class="home-note-more"><i data-lucide="more-horizontal"></i></span>
-        </span>
-        <span class="home-note-copy">
-          <strong>${esc(note.title || 'ملاحظة جديدة')}</strong>
-          <small>${esc(preview || 'لا يوجد نص بعد')}</small>
-        </span>
-        <span class="home-note-bottom">
-          <span class="home-note-line"></span>
-          ${note.isPinned ? '<i class="home-note-pin" data-lucide="pin"></i>' : '<i data-lucide="grip-vertical"></i>'}
-        </span>
-      </button>`;
-  }).join('');
-  return `
-    <section class="shortcuts-section" aria-labelledby="home-notes-title">
-      <div class="shortcuts-heading home-notes-heading">
-        <div><span class="shortcuts-kicker">آخر ما كتبت</span><h2 id="home-notes-title">الملاحظات</h2></div>
-        <button class="btn-accent" data-action="new-home-note"><i data-lucide="plus"></i><span class="btn-text">إضافة ملاحظة</span></button>
-      </div>
-      <div class="home-notes-grid">
-        ${!recentNotesReady ? '<div class="home-notes-status">جارٍ تحميل الملاحظات…</div>' : cards || '<div class="home-notes-status">لا توجد ملاحظات بعد. أضف أول ملاحظة من هنا.</div>'}
-      </div>
-      ${recentNotes.length ? '<button class="home-notes-all" data-action="open-notes">عرض كل الملاحظات <i data-lucide="arrow-left"></i></button>' : ''}
+      ${body}
     </section>`;
 }
 
 function renderHome() {
-  const lists = store.lists;
-
   headerEl.innerHTML = `
     <div class="header-inner">
       <div class="app-brand">
@@ -212,9 +111,7 @@ function renderHome() {
       </div>
       <div class="header-actions">
         ${currentUser?.role === 'admin' ? '<button class="icon-btn" data-action="manage-users" aria-label="إدارة المستخدمين" title="إدارة المستخدمين"><i data-lucide="users"></i></button>' : ''}
-        <button class="btn-ghost notes-nav-link" data-action="open-notes" aria-label="الملاحظات"><i data-lucide="notebook-pen"></i><span>الملاحظات</span></button>
         <button class="icon-btn" data-action="toggle-search" aria-label="بحث"><i data-lucide="search"></i></button>
-        <button class="btn-accent" data-action="new-list"><i data-lucide="plus"></i><span class="btn-text">قائمة جديدة</span></button>
         <button class="icon-btn subtle" data-action="logout" aria-label="تسجيل الخروج" title="تسجيل الخروج"><i data-lucide="log-out"></i></button>
       </div>
     </div>`;
@@ -227,32 +124,16 @@ function renderHome() {
     </div>
     <div id="search-results"></div>` : '';
 
-  const pinned = lists.filter((l) => l.pinned);
-  const others = lists.filter((l) => !l.pinned);
-
-  const contentHtml = lists.length ? `
-    ${pinned.length ? `
-      <h3 class="section-title pin-title"><i data-lucide="pin"></i> مثبتة</h3>
-      <div class="lists-grid" id="pinned-grid">${pinned.map(listCard).join('')}</div>` : ''}
-    ${pinned.length && others.length ? '<h3 class="section-title">القوائم</h3>' : ''}
-    <div class="lists-grid" id="lists-grid">
-      ${others.map(listCard).join('')}
-      <button class="add-card" data-action="new-list"><i data-lucide="plus"></i><span>إضافة قائمة</span></button>
-    </div>` : `
-    <div class="empty">
-      <div class="empty-icon"><i data-lucide="list-plus"></i></div>
-      <h2>لا توجد قوائم حتى الآن</h2>
-      <p>أنشئ أول قائمة وابدأ بتنظيم مهامك.</p>
-      <button class="btn-accent lg" data-action="new-list"><i data-lucide="plus"></i> إنشاء قائمة</button>
-    </div>`;
-
-  mainEl.innerHTML = searchHtml + `<div id="home-content" ${searchQuery.trim() ? 'hidden' : ''}>${contentHtml}${homeNotesSection()}${goalsSection()}</div>`;
+  mainEl.innerHTML = searchHtml
+    + `<div id="home-content" ${searchQuery.trim() ? 'hidden' : ''}>${homeSection('tasks')}${homeSection('projects')}</div>`;
 
   if (searchOpen) updateSearchResults();
-  const grid = document.getElementById('lists-grid');
-  if (grid) makeSortable(grid, '.list-card', '.card-drag', (ids) => store.reorderLists(ids), 'grid');
-  const pinnedGrid = document.getElementById('pinned-grid');
-  if (pinnedGrid) makeSortable(pinnedGrid, '.list-card', '.card-drag', (ids) => store.reorderLists(ids), 'grid');
+  for (const key of Object.keys(SECTIONS)) {
+    for (const id of [`lists-grid-${key}`, `pinned-grid-${key}`]) {
+      const grid = document.getElementById(id);
+      if (grid) makeSortable(grid, '.list-card', '.card-drag', (ids) => store.reorderLists(ids), 'grid');
+    }
+  }
 }
 
 function searchTaskRow(t) {
@@ -531,24 +412,6 @@ function openListMenu(anchor, id) {
   ]));
 }
 
-function openGoalMenu(anchor, id) {
-  const goal = store.getGoal(id);
-  if (!goal) return;
-  const content = menuContent([
-    { icon: 'pencil', label: 'تعديل الهدف', onClick: () => openGoalModal(goal) },
-    {
-      icon: 'trash-2', label: 'حذف الهدف', danger: true,
-      onClick: () => openConfirm({
-        title: 'حذف الهدف',
-        message: `هل أنت متأكد من حذف هدف «${goal.title}»؟`,
-        onConfirm: () => store.deleteGoal(id),
-      }),
-    },
-  ]);
-  if (isMobile()) openSheet('خيارات الهدف', content);
-  else openPopover(anchor, content);
-}
-
 function openConfirm({ title, message, confirmLabel = 'حذف', onConfirm }) {
   closeOverlay();
   const bd = document.createElement('div');
@@ -569,69 +432,10 @@ function openConfirm({ title, message, confirmLabel = 'حذف', onConfirm }) {
   document.body.style.overflow = 'hidden';
 }
 
-function openGoalModal(goal = null) {
-  closeOverlay();
-  const isEdit = !!goal;
-  const initialProgress = Math.max(0, Math.min(100, Number(goal?.progress) || 0));
-  const bd = document.createElement('div');
-  bd.className = 'backdrop';
-  bd.addEventListener('click', closeOverlay);
-  const m = document.createElement('div');
-  m.className = 'modal goal-modal';
-  m.innerHTML = `
-    <div class="goal-modal-head">
-      <span class="goal-modal-icon"><i data-lucide="target"></i></span>
-      <div><h2>${isEdit ? 'تعديل الهدف' : 'إضافة هدف جديد'}</h2><p class="muted">حوّل فكرتك إلى تقدّم واضح يمكنك قياسه.</p></div>
-    </div>
-    <label class="field-label" for="goal-title">اسم الهدف</label>
-    <input id="goal-title" class="text-input" maxlength="200" autocomplete="off" placeholder="مثال: إطلاق المتجر الجديد" value="${esc(goal?.title || '')}">
-    <div class="goal-progress-label"><label for="goal-progress-range">نسبة الإنجاز الحالية</label><output id="goal-progress-output">${initialProgress}%</output></div>
-    <div class="goal-progress-editor">
-      <input id="goal-progress-range" class="goal-range" type="range" min="0" max="100" step="1" value="${initialProgress}" style="--range-progress:${initialProgress}%">
-      <div class="goal-number-wrap"><input id="goal-progress-number" type="number" min="0" max="100" step="1" value="${initialProgress}" aria-label="نسبة الإنجاز"><span>%</span></div>
-    </div>
-    <p class="login-error" id="goal-form-error" hidden></p>
-    <div class="modal-actions"><button class="btn-ghost" data-x="cancel">إلغاء</button><button class="btn-accent" data-x="save">حفظ الهدف</button></div>`;
-  overlayRoot.append(bd, m);
-  document.body.style.overflow = 'hidden';
-  refreshIcons();
-
-  const titleInput = m.querySelector('#goal-title');
-  const rangeInput = m.querySelector('#goal-progress-range');
-  const numberInput = m.querySelector('#goal-progress-number');
-  const output = m.querySelector('#goal-progress-output');
-  const error = m.querySelector('#goal-form-error');
-  const setProgress = (raw) => {
-    const value = Math.max(0, Math.min(100, Math.round(Number(raw) || 0)));
-    rangeInput.value = value;
-    numberInput.value = value;
-    output.value = `${value}%`;
-    rangeInput.style.setProperty('--range-progress', `${value}%`);
-  };
-  rangeInput.addEventListener('input', () => setProgress(rangeInput.value));
-  numberInput.addEventListener('input', () => setProgress(numberInput.value));
-  const save = () => {
-    const title = titleInput.value.trim();
-    const progress = Number(rangeInput.value);
-    if (!title) {
-      error.textContent = 'أدخل اسم الهدف أولًا.';
-      error.hidden = false;
-      titleInput.classList.add('error');
-      titleInput.focus();
-      return;
-    }
-    if (isEdit) store.updateGoal(goal.id, { title, progress });
-    else store.addGoal(title, progress);
-    closeOverlay();
-  };
-  m.querySelector('[data-x="cancel"]').addEventListener('click', closeOverlay);
-  m.querySelector('[data-x="save"]').addEventListener('click', save);
-  titleInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') save(); });
-  titleInput.focus();
-}
-
-function openListModal(list) {
+function openListModal(list, section = 'tasks') {
   const isEdit = !!list;
+  const kind = isEdit ? (list.section || 'tasks') : section;
+  const meta = SECTIONS[kind];
   let color = list?.color ?? LIST_COLORS[0].value;
   let icon = list?.icon ?? 'list';
   let recurring = list?.recurring ?? false;
@@ -644,8 +448,8 @@ function openListModal(list) {
   const m = document.createElement('div');
   m.className = 'modal';
   m.innerHTML = `
-    <h2>${isEdit ? 'تعديل القائمة' : 'قائمة جديدة'}</h2>
-    <label class="field-label" for="list-name">اسم القائمة</label>
+    <h2>${isEdit ? `تعديل ${kind === 'projects' ? 'المشروع' : 'القائمة'}` : meta.addLabel}</h2>
+    <label class="field-label" for="list-name">${kind === 'projects' ? 'اسم المشروع' : 'اسم القائمة'}</label>
     <input id="list-name" class="text-input" value="${esc(list?.title ?? '')}" placeholder="مثال: مهام اليوم" maxlength="60" autocomplete="off">
     <label class="field-label">اللون</label>
     <div class="color-row">
@@ -703,7 +507,7 @@ function openListModal(list) {
       return;
     }
     if (isEdit) store.updateList(list.id, { title, color, icon, recurring });
-    else store.addList({ title, color, icon, recurring });
+    else store.addList({ title, color, icon, recurring, section: kind });
     closeOverlay();
   };
 
@@ -778,10 +582,8 @@ function renderUsers() {
             <span class="user-avatar"><i data-lucide="${u.role === 'admin' ? 'shield-check' : 'user'}"></i></span>
             <div class="user-identity"><strong dir="ltr">${esc(u.email)}</strong><span>${u.role === 'admin' ? 'الأدمن الرئيسي' : (u.active ? 'حساب نشط' : 'حساب معطّل')}</span></div>
           </div>
-          <div class="user-stats"><span>${u.listsCount} قائمة</span><span>${u.tasksCount} مهمة</span><span>${u.goalsCount || 0} هدف</span><span>${u.notesCount || 0} ملاحظة</span></div>
-          <div class="user-actions">
-            <button class="btn-ghost" data-view-user-notes="${u.id}">الملاحظات</button>
-          ${u.role !== 'admin' ? `
+          <div class="user-stats"><span>${u.listsCount} قائمة</span><span>${u.tasksCount} مهمة</span></div>
+          <div class="user-actions">${u.role !== 'admin' ? `
             <button class="btn-ghost" data-edit-user="${u.id}">تعديل</button>
             <button class="btn-ghost" data-toggle-user="${u.id}">${u.active ? 'تعطيل' : 'تفعيل'}</button>
             <button class="btn-danger" data-delete-user="${u.id}">حذف</button>
@@ -828,7 +630,7 @@ function openUserModal(user = null) {
       const data = await usersApi(user ? `?id=${encodeURIComponent(user.id)}` : '', user ? 'PATCH' : 'POST', body);
       if (user) {
         adminUsers = adminUsers.map((item) => item.id === user.id
-          ? { ...item, ...data.user, listsCount: item.listsCount, tasksCount: item.tasksCount, goalsCount: item.goalsCount, notesCount: item.notesCount }
+          ? { ...item, ...data.user, listsCount: item.listsCount, tasksCount: item.tasksCount }
           : item);
       } else {
         adminUsers.push(data.user);
@@ -853,7 +655,7 @@ async function toggleUser(id) {
   if (!user) return;
   const data = await usersApi(`?id=${encodeURIComponent(id)}`, 'PATCH', { active: !user.active });
   adminUsers = adminUsers.map((item) => item.id === id
-    ? { ...item, ...data.user, listsCount: item.listsCount, tasksCount: item.tasksCount, goalsCount: item.goalsCount, notesCount: item.notesCount }
+    ? { ...item, ...data.user, listsCount: item.listsCount, tasksCount: item.tasksCount }
     : item);
   render();
 }
@@ -953,8 +755,6 @@ function renderLogin() {
 let subscribed = false;
 async function startApp(user, initialData = null) {
   currentUser = user;
-  recentNotes = [];
-  recentNotesReady = false;
   store.setCurrentUser(user);
   if (!subscribed) {
     store.subscribe(render);
@@ -963,12 +763,7 @@ async function startApp(user, initialData = null) {
   try {
     if (initialData) store.hydrate(initialData);
     else await store.init();
-    // Render the task workspace as soon as its primary data is ready. Notes are
-    // decorative previews on the home page, so they load in the background.
     render();
-    loadRecentNotes().then(() => {
-      if (currentRoute().view === 'home') render();
-    });
   } catch (e) {
     currentUser = null;
     renderLogin();
@@ -1004,34 +799,13 @@ async function handleAction(action, el) {
       document.getElementById('search-input')?.focus();
       break;
     case 'new-list':
-      openListModal();
-      break;
-    case 'new-goal':
-      openGoalModal();
+      openListModal(null, el.dataset.section === 'projects' ? 'projects' : 'tasks');
       break;
     case 'manage-users':
       await loadUsers();
       location.hash = '#/users';
       render();
       break;
-    case 'open-notes':
-      location.hash = '#/notes';
-      break;
-    case 'open-note':
-      location.hash = `#/notes/note/${encodeURIComponent(el.dataset.id)}`;
-      break;
-    case 'new-home-note': {
-      const response = await fetch('/api/notes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: '', content: '' }),
-      });
-      if (!response.ok) break;
-      const data = await response.json();
-      recentNotes = [data.note, ...recentNotes].slice(0, 3);
-      location.hash = `#/notes/note/${encodeURIComponent(data.note.id)}`;
-      break;
-    }
     case 'new-user':
       openUserModal();
       break;
@@ -1053,8 +827,6 @@ async function handleAction(action, el) {
     case 'logout':
       await fetch('/api/auth', { method: 'DELETE' }).catch(() => {});
       currentUser = null;
-      recentNotes = [];
-      recentNotesReady = false;
       location.hash = '';
       renderLogin();
       break;
@@ -1080,14 +852,8 @@ document.addEventListener('click', (e) => {
   const deleteUserEl = t.closest('[data-delete-user]');
   if (deleteUserEl) { deleteUser(deleteUserEl.dataset.deleteUser); return; }
 
-  const viewUserNotes = t.closest('[data-view-user-notes]');
-  if (viewUserNotes) { location.hash = `#/notes/user/${viewUserNotes.dataset.viewUserNotes}`; return; }
-
   const cardMenu = t.closest('[data-card-menu]');
   if (cardMenu) { openListMenu(cardMenu, cardMenu.dataset.cardMenu); return; }
-
-  const goalMenu = t.closest('[data-goal-menu]');
-  if (goalMenu) { openGoalMenu(goalMenu, goalMenu.dataset.goalMenu); return; }
 
   const taskMenu = t.closest('[data-task-menu]');
   if (taskMenu) { openTaskMenu(taskMenu, taskMenu.dataset.taskMenu); return; }
@@ -1136,17 +902,10 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-window.addEventListener('hashchange', async () => {
-  if (notesApp.isActive()) await notesApp.flush();
-  const refreshHomeNotes = !location.hash.startsWith('#/notes') && currentRoute().view === 'home';
+window.addEventListener('hashchange', () => {
   filter = 'all';
   closeOverlay();
   render();
-  if (refreshHomeNotes) {
-    loadRecentNotes(true).then(() => {
-      if (currentRoute().view === 'home') render();
-    });
-  }
 });
 
 window.addEventListener('auth-required', () => {

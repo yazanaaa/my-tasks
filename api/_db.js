@@ -20,7 +20,7 @@ export function ensureSchema() {
       const db = sql();
       try {
         const version = await db`SELECT value FROM app_meta WHERE key = 'schema_version' LIMIT 1`;
-        if (version[0]?.value === '5') return;
+        if (version[0]?.value === '6') return;
       } catch (e) {
         // First run (or upgrade from the pre-versioned schema): run the migration below.
       }
@@ -57,6 +57,7 @@ export function ensureSchema() {
             created_at BIGINT NOT NULL DEFAULT 0
           )`,
         tx`ALTER TABLE lists ADD COLUMN IF NOT EXISTS user_id TEXT REFERENCES users(id) ON DELETE CASCADE`,
+        tx`ALTER TABLE lists ADD COLUMN IF NOT EXISTS section TEXT NOT NULL DEFAULT 'tasks'`,
         tx`CREATE INDEX IF NOT EXISTS lists_user_idx ON lists (user_id)`,
         tx`
           CREATE TABLE IF NOT EXISTS tasks (
@@ -140,7 +141,7 @@ export function ensureSchema() {
       }
       await db`DELETE FROM sessions WHERE expires_at <= ${Date.now()}`;
       await db`
-        INSERT INTO app_meta (key, value) VALUES ('schema_version', '5')
+        INSERT INTO app_meta (key, value) VALUES ('schema_version', '6')
         ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`;
     })().catch((e) => {
       schemaReady = null;
