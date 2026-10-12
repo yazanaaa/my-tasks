@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  CalendarDays, CalendarRange, ChartColumn, CircleCheck, Flame, FolderPlus, Inbox, Lightbulb, LogOut, Plus, Search,
+  CalendarDays, CalendarRange, ChartColumn, CircleCheck, Flame, FolderPlus, Inbox, Lightbulb, ListRestart, LogOut, Plus, Search,
   Settings, Sun, Folder,
 } from 'lucide-react';
 import clsx from 'clsx';
@@ -48,6 +48,7 @@ function Palette() {
     const match = (s: string) => !nq || norm(s).includes(nq);
     const nav: Item[] = [
       { id: 'n-today', group: 'انتقال', label: 'اليوم', icon: <Sun />, run: go('/') },
+      { id: 'n-daily', group: 'انتقال', label: 'يومية', icon: <ListRestart />, run: go('/daily') },
       { id: 'n-upcoming', group: 'انتقال', label: 'القادم', icon: <CalendarRange />, run: go('/upcoming') },
       { id: 'n-inbox', group: 'انتقال', label: 'الوارد', icon: <Inbox />, run: go('/inbox') },
       { id: 'n-ideas', group: 'انتقال', label: 'الأفكار', icon: <Lightbulb />, run: go('/ideas') },

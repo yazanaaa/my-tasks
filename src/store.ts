@@ -1,12 +1,12 @@
 import { create } from 'zustand';
 import { api, ApiError, enqueue, newId } from './lib/api';
-import { ideasLabel, nextOccurrence, relativeDay } from './lib/dates';
+import { dailyBoundary, ideasLabel, nextOccurrence, relativeDay } from './lib/dates';
 import { cleanIdeaText, extractTags, nextIdeaColor, pickIdeaColor, splitIdea, stripTags } from './lib/ideas';
 import {
   clearDraft, forgetUser, lastUserId, readAllDrafts, readOutbox, rememberUser, writeOutbox,
 } from './lib/outbox';
 import { currentThemeMode, setThemeMode } from './lib/themeMode';
-import type { Bootstrap, Habit, Idea, IdeaSource, Project, Section, Task, User } from './types';
+import type { Bootstrap, DailyItem, Habit, Idea, IdeaSource, Project, Section, Task, User } from './types';
 
 type Rec<T> = Record<string, T>;
 
@@ -35,6 +35,7 @@ interface State {
   tasks: Rec<Task>;
   habits: Rec<Habit>;
   habitLogs: Rec<true>; // `${habitId}|${date}`
+  dailyItems: Rec<DailyItem>;
   ideas: Rec<Idea>;
   pendingIdeas: Rec<true>; // ideas still waiting in the outbox after a failed upload
   toasts: Toast[];
@@ -70,6 +71,7 @@ export const useStore = create<State>()(() => ({
   tasks: {},
   habits: {},
   habitLogs: {},
+  dailyItems: {},
   ideas: {},
   pendingIdeas: {},
   toasts: [],
@@ -143,6 +145,7 @@ export async function load() {
       tasks: byId(data.tasks),
       habits: byId(data.habits),
       habitLogs: Object.fromEntries(data.habitLogs.map((l) => [logKey(l.habitId, l.date), true])),
+      dailyItems: byId(data.dailyItems ?? []),
       ideas,
       pendingIdeas: Object.fromEntries(unsent.filter((i) => !inflight.has(i.id)).map((i) => [i.id, true])),
     });
@@ -198,7 +201,7 @@ export async function logout() {
   forgetUser();
   // The outbox stays: it's keyed by user, so it only ever flushes into its own account on their next login.
   set({
-    status: 'anon', user: null, projects: {}, sections: {}, tasks: {}, habits: {}, habitLogs: {}, selectedTaskId: null,
+    status: 'anon', user: null, projects: {}, sections: {}, tasks: {}, habits: {}, habitLogs: {}, dailyItems: {}, selectedTaskId: null,
     ideas: {}, pendingIdeas: {}, ideaCapture: null, selectedIdeaId: null,
   });
 }
@@ -428,6 +431,77 @@ export function deleteSection(id: string) {
     return { sections: without(s.sections, new Set([id])), tasks };
   });
   persist(() => api.del(`sections?id=${id}`));
+}
+
+/* ---------- «يومية» ---------- */
+
+export const isDailyDone = (item: DailyItem, boundary = dailyBoundary()) =>
+  item.checkedAt !== null && item.checkedAt >= boundary;
+
+/** Adds items in order (several at once for a pasted list). */
+export function addDailyItems(titles: string[]): DailyItem[] {
+  const now = Date.now();
+  const items = titles.map((title, i): DailyItem => ({
+    id: newId(), title, checkedAt: null, position: now + i, createdAt: now, updatedAt: now,
+  }));
+  if (!items.length) return items;
+  set((s) => ({ dailyItems: { ...s.dailyItems, ...byId(items) } }));
+  const payload = items.map(({ updatedAt: _u, ...rest }) => rest);
+  persist(() => api.post('daily-items', payload.length === 1 ? payload[0] : { items: payload }));
+  return items;
+}
+
+export function updateDailyItem(id: string, patch: Partial<Pick<DailyItem, 'title' | 'checkedAt' | 'position'>>) {
+  const item = get().dailyItems[id];
+  if (!item) return;
+  set((s) => ({ dailyItems: { ...s.dailyItems, [id]: { ...item, ...patch, updatedAt: Date.now() } } }));
+  persist(() => api.patch(`daily-items?id=${id}`, patch));
+}
+
+export function toggleDailyItem(id: string) {
+  const item = get().dailyItems[id];
+  if (item) updateDailyItem(id, { checkedAt: isDailyDone(item) ? null : Date.now() });
+}
+
+export function reorderDailyItems(moves: { id: string; position: number }[]) {
+  set((s) => {
+    const dailyItems = { ...s.dailyItems };
+    for (const m of moves) if (dailyItems[m.id]) dailyItems[m.id] = { ...dailyItems[m.id], position: m.position };
+    return { dailyItems };
+  });
+  persist(() => api.patch('daily-items', { items: moves }));
+}
+
+export function deleteDailyItem(id: string) {
+  const item = get().dailyItems[id];
+  if (!item) return;
+  set((s) => ({ dailyItems: without(s.dailyItems, new Set([id])) }));
+  persist(() => api.del(`daily-items?id=${id}`));
+  toast('حُذف البند', {
+    label: 'تراجع',
+    run: () => {
+      set((s) => ({ dailyItems: { ...s.dailyItems, [id]: item } }));
+      const { updatedAt: _u, ...payload } = item;
+      persist(() => api.post('daily-items', payload));
+    },
+  });
+}
+
+/** The «إعادة» button: unticks everything now, with undo. (The 5 AM reset needs no write at all.) */
+export function resetDaily() {
+  const boundary = dailyBoundary();
+  const done = Object.values(get().dailyItems).filter((i) => isDailyDone(i, boundary));
+  if (!done.length) return;
+  const move = (items: { id: string; checkedAt: number | null }[]) => {
+    set((s) => {
+      const dailyItems = { ...s.dailyItems };
+      for (const m of items) if (dailyItems[m.id]) dailyItems[m.id] = { ...dailyItems[m.id], checkedAt: m.checkedAt };
+      return { dailyItems };
+    });
+    persist(() => api.patch('daily-items', { items }));
+  };
+  move(done.map((i) => ({ id: i.id, checkedAt: null })));
+  toast('رجعت اليومية من جديد', { label: 'تراجع', run: () => move(done.map((i) => ({ id: i.id, checkedAt: i.checkedAt }))) });
 }
 
 /* ---------- Habits ---------- */

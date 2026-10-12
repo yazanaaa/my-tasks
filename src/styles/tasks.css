@@ -946,3 +946,55 @@
   gap: 4px;
   min-width: 0;
 }
+
+/* ---------- «يومية» ---------- */
+
+.daily-progress {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+.daily-bar {
+  height: 6px;
+  margin: -6px 0 14px;
+  border-radius: 99px;
+  background: var(--fill);
+  overflow: hidden;
+}
+
+.daily-bar i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--hue-teal);
+  transition: width 0.35s var(--ease);
+}
+
+.daily-row.done .task-title {
+  color: var(--ink-3);
+  text-decoration: line-through;
+  text-decoration-color: color-mix(in srgb, var(--ink-3) 60%, transparent);
+}
+
+.daily-row .check.on {
+  background: var(--hue-teal);
+  border-color: var(--hue-teal);
+}
+
+.daily-edit {
+  width: 100%;
+  padding: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.daily-done {
+  margin-top: 18px;
+  font-size: 14px;
+  color: var(--hue-teal);
+  font-weight: 500;
+}

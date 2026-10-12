@@ -26,7 +26,7 @@ npm.cmd run build      # tsc ثم vite build إلى dist/
 - `api/` — Vercel serverless functions (JS ESM). الملفات اللي تبدأ بـ `_` ليست routes.
   - `_lib/db.js` — اتصال Neon + إنشاء الجداول تلقائيًا في schema اسمه `mt` (منفصل عن جداول النسخة القديمة)
   - `_lib/crud.js` — `resource()` عام: POST/PATCH/DELETE مع تحقق من الحقول وملكية المراجع، ودعم الدفعات `{items:[…]}`
-  - `bootstrap.js` (كل البيانات بطلب واحد)، `tasks.js`، `projects.js`، `sections.js`، `habits.js`، `habit-logs.js`، `ideas.js`، `auth.js`، `account.js`، `users.js` (أدمن فقط)
+  - `bootstrap.js` (كل البيانات بطلب واحد)، `tasks.js`، `projects.js`، `sections.js`، `habits.js`، `habit-logs.js`، `ideas.js`، `daily-items.js`، `auth.js`، `account.js`، `users.js` (أدمن فقط)
 - `src/store.ts` — Zustand: كل البيانات + الإجراءات، تحديث متفائل، والكتابات تمر عبر طابور تسلسلي (`lib/api.ts → enqueue`). إنشاء الأفكار يمر عبر outbox محلي (`flushOutbox`) فبيشتغل بدون نت.
 - `src/lib/parse.ts` — الإضافة الذكية بالعربي: «بكرا الساعة 5 العصر #عمل @مشروع !!» (تواريخ، أوقات، تكرار، وسوم، مشروع، أولوية). **لا تُستخدم للأفكار.**
 - `src/lib/dates.ts` — التواريخ كأيام محلية `YYYY-MM-DD`، أسماء الأشهر الشامية، الأسبوع يبدأ الأحد، حساب التكرار، `timeAgo` و`ideasLabel`
@@ -37,7 +37,7 @@ npm.cmd run build      # tsc ثم vite build إلى dist/
   - `IdeaCapture` — شيت إضافة الفكرة (textarea فاضي، Enter يحفظ ويضل مفتوح، الإغلاق مع نص يحفظ) + `CaptureModeSwitch` (فكرة/مهمة، مستخدم كمان بـ `QuickAdd`)
   - `IdeaCard` — `IdeaCard` و`IdeaWall` (masonry ثابت: الجديد بأعلى عمود وما في كرت بينط) و`SparkCard` «فاكر هالفكرة؟» (بصفحة الأفكار وعلى Today)
   - `IdeaSheet` — تفاصيل الفكرة: تعديل النص، اللون، تثبيت/أرشفة/حذف، وتحويلها لمهمة أو مشروع
-- `src/pages/` — Today، Upcoming، Inbox، Ideas، Projects، ProjectPage، Calendar، Habits، Stats، Settings، Login
+- `src/pages/` — Today، Daily، Upcoming، Inbox، Ideas، Projects، ProjectPage، Calendar، Habits، Stats، Settings، Login
 - `src/styles/` — `base.css` (Design tokens في `:root`)، `layout.css`، `ui.css`، `tasks.css`، `pages.css`، `ideas.css` (الجدار والصفحة، و`--idea`)، `idea-sheets.css` (شيت الإضافة وشيت الفكرة). ألوان الأفكار ما بتنحط بأي ملف CSS تاني.
 
 ## البيانات (schema `mt`)
@@ -46,6 +46,7 @@ npm.cmd run build      # tsc ثم vite build إلى dist/
   - `pinned` (v4): المهمة المثبّتة بتطلع أول قائمتها (`byPinned`/`byAgenda`)، وعلى «اليوم» بقسم «مثبّتة» إذا ما إلها تاريخ أو تاريخها لقدّام. المهام الفرعية ما بتتثبّت.
 - `projects: {id, name, description, color, icon, view: list|board, archived, position}` و `sections: {id, projectId, name, position}`
 - `habits: {id, name, color, icon, days[0-6], archived, position}` و `habit_logs: {habitId, date}`
+- `daily_items: {id, title ≤ 300, checkedAt?, position}` (v6) — قائمة «يومية» (`/daily`، `pages/Daily.tsx`): البند مشطوب إذا `checkedAt` بعد آخر 5 الصبح بالتوقيت المحلي (`dailyBoundary` بـ `lib/dates.ts`، بينحسب عند العميل)، فالإعادة اليومية ما بدها أي كتابة بالقاعدة. زر «إعادة» (`resetDaily`) بيمسح `checkedAt` للمشطوبين مع تراجع. لصق كم سطر بيضيف كل سطر كبند.
 - `ideas: {id, text ≤ 4000, tags[], color, pinned, archived, source: app|palette|share|link|draft|import, taskId?, projectId?, convertedAt?, surfacedAt?, createdAt, updatedAt}`
   - النص كما انكتب، وأول سطر غير فاضي هو العنوان. الوسوم مشتقة من `#وسم` جوّا النص (ما بتنعدّل لحالها).
   - اللون تلقائي: هاش أول وسم، وإلا اللون التالي بالتدوير. ما في تاريخ أو أولوية أو ترتيب يدوي للأفكار.
@@ -54,12 +55,12 @@ npm.cmd run build      # tsc ثم vite build إلى dist/
   - `bootstrap` يرجّع الأفكار الحية والمحوّلة والمؤرشفة اللي تعدّلت آخر 400 يوم، الأحدث أولًا.
 - التكرار: `daily | weekdays | weekly | monthly | yearly | every:N:day|week|month | days:0,3`. عند إنجاز مهمة متكررة تبقى كسجل وتُنشأ نسخة بالموعد التالي.
 - الترتيب بـ `position` كسري (منتصف الجارين عند السحب). السحب شغّال بالوارد والمشاريع والقادم و«لليوم». بالصفحات المرتبطة بتاريخ (`byAgenda`): المثبّتة أول، بعدين اللي إلها وقت حسب الوقت، وبعدين ترتيب السحب. الأولوية ما بتغيّر الترتيب (بتبيّن بلون الدائرة).
-- `SCHEMA_VERSION` في `_lib/db.js` هلأ `'5'`. (v3 انكتب بالقاعدة قبل ما تنضاف جملة `pinned`، فـ v4 بيعيدها.) ارفع الرقم وضيف الجمل بنفس التعديل، لأنه `npm run dev` بيشغّل الـ migration على قاعدة الإنتاج أول ما ينحفظ الملف. **أي تغيير بالـ schema لازم يرفعه**، وإلا `migrate()` بيرجع بدري على القواعد الموجودة. المقارنة رقمية (`>=`) فالنشر الأقدم ما بيعيد الـ migration فوق schema أحدث. كل جملة `IF NOT EXISTS`، والجمل الجديدة قبل `INSERT INTO mt.meta`.
+- `SCHEMA_VERSION` في `_lib/db.js` هلأ `'6'`. (v3 انكتب بالقاعدة قبل ما تنضاف جملة `pinned`، فـ v4 بيعيدها.) ارفع الرقم وضيف الجمل بنفس التعديل، لأنه `npm run dev` بيشغّل الـ migration على قاعدة الإنتاج أول ما ينحفظ الملف. **أي تغيير بالـ schema لازم يرفعه**، وإلا `migrate()` بيرجع بدري على القواعد الموجودة. المقارنة رقمية (`>=`) فالنشر الأقدم ما بيعيد الـ migration فوق schema أحدث. كل جملة `IF NOT EXISTS`، والجمل الجديدة قبل `INSERT INTO mt.meta`.
 
 ## الاختصارات والروابط
 
-- `Q`/`ض`/`N` مهمة جديدة · `I`/`ه` فكرة جديدة (نفس المفتاح، `e.code === 'KeyI'`) · `/` بحث · Ctrl+K بحث وأوامر، ومع نص بيعرض «احفظ «…» كفكرة» · Alt+1…7 التنقل (7 = الأفكار) · Esc إغلاق
-- سطح المكتب: زر اللمبة بالـ sidebar بين «مهمة جديدة» والبحث. الجوال: `.dock` عايم تحت، فيه كبسولة تبويبات أيقونات بس (`aria-label` لكل وحدة، والمفتوح بلون صفحته) وجنبها الـ FAB الوردي اللي بيفتح فكرة جديدة. تبويب «الأفكار» بالنص (العادات صارت تحت «المزيد»).
+- `Q`/`ض`/`N` مهمة جديدة · `I`/`ه` فكرة جديدة (نفس المفتاح، `e.code === 'KeyI'`) · `/` بحث · Ctrl+K بحث وأوامر، ومع نص بيعرض «احفظ «…» كفكرة» · Alt+1…8 التنقل (7 = الأفكار، 8 = يومية) · Esc إغلاق
+- سطح المكتب: زر اللمبة بالـ sidebar بين «مهمة جديدة» والبحث. الجوال: `.dock` عايم تحت، فيه كبسولة تبويبات أيقونات بس (`aria-label` لكل وحدة، والمفتوح بلون صفحته) وجنبها الـ FAB الوردي اللي بيفتح فكرة جديدة. تبويب «الأفكار» بالنص (العادات و«يومية» تحت «المزيد»).
 - الروابط بتعبّي الشيت بس، **ما بتحفظ شي** لحالها، وبعدين الـ params بتنشال من الـ URL:
   - `/<أي صفحة>?new=1` شيت فكرة فاضي، و`?new=<نص>` (مثلًا `/ideas?new=…`) بيعبّيه
   - `/?add=1` إضافة مهمة

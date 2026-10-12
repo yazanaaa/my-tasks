@@ -87,6 +87,16 @@ export interface Idea {
   updatedAt: number;
 }
 
+/** «يومية» checklist item: done while checkedAt is after the latest 5 AM (see lib/dates dailyBoundary). */
+export interface DailyItem {
+  id: string;
+  title: string;
+  checkedAt: number | null;
+  position: number;
+  createdAt: number;
+  updatedAt: number;
+}
+
 export interface Bootstrap {
   user: User;
   projects: Project[];
@@ -95,4 +105,5 @@ export interface Bootstrap {
   habits: Habit[];
   habitLogs: HabitLog[];
   ideas: Idea[];
+  dailyItems: DailyItem[];
 }

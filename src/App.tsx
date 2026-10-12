@@ -14,6 +14,7 @@ import { ProjectsPage } from './pages/Projects';
 import { ProjectPage } from './pages/ProjectPage';
 import { CalendarPage } from './pages/Calendar';
 import { HabitsPage } from './pages/Habits';
+import { DailyPage } from './pages/Daily';
 import { StatsPage } from './pages/Stats';
 import { SettingsPage } from './pages/Settings';
 import { LoginPage } from './pages/Login';
@@ -73,6 +74,7 @@ export function App() {
             <Route path="/projects" element={<ProjectsPage />} />
             <Route path="/projects/:id" element={<ProjectPage />} />
             <Route path="/calendar" element={<CalendarPage />} />
+            <Route path="/daily" element={<DailyPage />} />
             <Route path="/habits" element={<HabitsPage />} />
             <Route path="/stats" element={<StatsPage />} />
             <Route path="/settings" element={<SettingsPage />} />

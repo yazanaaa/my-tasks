@@ -26,6 +26,15 @@ export function todayKey(): string {
   return toKey(new Date());
 }
 
+/** «يومية» resets at 5 AM local: the latest 5 AM at or before `now` (yesterday's before 5). */
+export const DAILY_RESET_HOUR = 5;
+export function dailyBoundary(now = Date.now()): number {
+  const d = new Date(now);
+  d.setHours(DAILY_RESET_HOUR, 0, 0, 0);
+  if (d.getTime() > now) d.setDate(d.getDate() - 1);
+  return d.getTime();
+}
+
 export function addDays(key: string, n: number): string {
   const d = fromKey(key);
   d.setDate(d.getDate() + n);

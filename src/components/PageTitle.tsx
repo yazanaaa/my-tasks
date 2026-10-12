@@ -1,11 +1,13 @@
 import type { ReactNode } from 'react';
 import {
-  CalendarDays, CalendarRange, ChartColumn, Flame, FolderKanban, Inbox, Lightbulb, Settings, Star, type LucideIcon,
+  CalendarDays, CalendarRange, ChartColumn, Flame, FolderKanban, Inbox, Lightbulb, ListRestart, Settings, Star,
+  type LucideIcon,
 } from 'lucide-react';
 
 // Each view owns a color: it tints its sidebar icon and its page title icon.
 export const VIEWS = {
   today: { label: 'اليوم', icon: Star, color: 'var(--hue-amber)', to: '/' },
+  daily: { label: 'يومية', icon: ListRestart, color: 'var(--hue-teal)', to: '/daily' },
   upcoming: { label: 'القادم', icon: CalendarDays, color: 'var(--hue-red)', to: '/upcoming' },
   inbox: { label: 'الوارد', icon: Inbox, color: 'var(--accent)', to: '/inbox' },
   ideas: { label: 'الأفكار', icon: Lightbulb, color: 'var(--idea)', to: '/ideas' },

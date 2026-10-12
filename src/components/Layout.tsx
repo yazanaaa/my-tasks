@@ -14,7 +14,7 @@ import {
 } from '../store';
 import { joinShared } from '../lib/ideas';
 import { useThemeMode } from '../lib/themeMode';
-import { useCounts, useProjectList, useTaskList } from '../lib/selectors';
+import { useCounts, useDailyLeft, useProjectList, useTaskList } from '../lib/selectors';
 import type { Project } from '../types';
 import { CommandPalette } from './CommandPalette';
 import { FormsHost, openProjectForm } from './Forms';
@@ -42,9 +42,10 @@ export function initials(name: string, email: string) {
   return (name.trim() || email).slice(0, 1).toUpperCase();
 }
 
-// `key` is the Alt+number shortcut; ideas got 7 so the older shortcuts keep their pages.
-const MAIN_NAV: { view: ViewKey; key: string; count?: 'today' | 'inbox' }[] = [
+// `key` is the Alt+number shortcut; ideas got 7 and «يومية» 8 so the older shortcuts keep their pages.
+const MAIN_NAV: { view: ViewKey; key: string; count?: 'today' | 'inbox' | 'daily' }[] = [
   { view: 'today', key: '1', count: 'today' },
+  { view: 'daily', key: '8', count: 'daily' },
   { view: 'upcoming', key: '2' },
   { view: 'inbox', key: '3', count: 'inbox' },
   { view: 'ideas', key: '7' },
@@ -96,7 +97,7 @@ export function Layout({ children }: { children: ReactNode }) {
     e.preventDefault();
     openIdeaCapture();
   });
-  useHotkey((e) => e.altKey && /^[1-7]$/.test(e.key), (e) => {
+  useHotkey((e) => e.altKey && /^[1-8]$/.test(e.key), (e) => {
     const item = MAIN_NAV.find((n) => n.key === e.key);
     if (!item) return;
     e.preventDefault();
@@ -151,6 +152,7 @@ function useProjectProgress() {
 function Sidebar() {
   const user = useStore((s) => s.user)!;
   const counts = useCounts();
+  const dailyLeft = useDailyLeft();
   const projects = useProjectList();
   const progress = useProjectProgress();
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
@@ -174,7 +176,7 @@ function Sidebar() {
       <nav className="nav">
         {MAIN_NAV.map(({ view, count }) => {
           const v = VIEWS[view];
-          const n = count === 'today' ? counts.today : count === 'inbox' ? counts.inbox : 0;
+          const n = count === 'today' ? counts.today : count === 'inbox' ? counts.inbox : count === 'daily' ? dailyLeft : 0;
           return (
             <NavLink key={view} to={v.to} end className={({ isActive }) => clsx('nav-item', isActive && 'active')} style={{ '--vc': v.color } as CSSProperties} onClick={() => selectTask(null)}>
               <ViewIcon view={view} />
@@ -245,7 +247,7 @@ function TabBar({ onMore }: { onMore: () => void }) {
     { to: '/ideas', label: 'الأفكار', icon: Lightbulb, color: VIEWS.ideas.color, className: 'tab-ideas' },
     { to: '/projects', label: 'المشاريع', icon: FolderKanban, color: VIEWS.projects.color },
   ];
-  const isMore = ['/inbox', '/habits', '/calendar', '/stats', '/settings'].some((p) => pathname.startsWith(p));
+  const isMore = ['/inbox', '/daily', '/habits', '/calendar', '/stats', '/settings'].some((p) => pathname.startsWith(p));
   return (
     <nav className="tabbar">
       {tabs.map(({ to, label, icon: I, color, className }) => (
@@ -260,8 +262,10 @@ function TabBar({ onMore }: { onMore: () => void }) {
 
 function MoreSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const counts = useCounts();
+  const dailyLeft = useDailyLeft();
   const items: { view: ViewKey; n?: number }[] = [
     { view: 'inbox', n: counts.inbox },
+    { view: 'daily', n: dailyLeft },
     { view: 'habits' },
     { view: 'calendar' },
     { view: 'stats' },

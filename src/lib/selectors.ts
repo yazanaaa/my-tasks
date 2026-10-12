@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useStore } from '../store';
-import { addDays, diffDays, todayKey, toKey, weekday } from './dates';
+import { addDays, dailyBoundary, diffDays, todayKey, toKey, weekday } from './dates';
 import type { Habit, Idea, Project, Section, Task } from '../types';
 
 /** Sort for date-driven views: pinned first, then timed tasks by time, then manual (dragged) order. */
@@ -145,4 +145,13 @@ export function dueTone(task: Task, today = todayKey()): 'overdue' | 'today' | '
   if (d === 0) return 'today';
   if (d < 7) return 'soon';
   return 'later';
+}
+
+/** «يومية» items still unticked since the latest 5 AM (refreshed on render). */
+export function useDailyLeft(): number {
+  const items = useStore((s) => s.dailyItems);
+  return useMemo(() => {
+    const boundary = dailyBoundary();
+    return Object.values(items).filter((i) => i.checkedAt === null || i.checkedAt < boundary).length;
+  }, [items]);
 }

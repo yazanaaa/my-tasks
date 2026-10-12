@@ -5,7 +5,7 @@ import { hashPassword } from './security.js';
 // Everything lives in its own Postgres schema so the new app starts clean
 // without touching the tables of the previous version.
 // Bump on every schema change, or migrate() returns early on existing databases.
-const SCHEMA_VERSION = '5';
+const SCHEMA_VERSION = '6';
 
 let sqlInstance = null;
 let schemaReady = null;
@@ -158,6 +158,19 @@ async function migrate() {
     tx`ALTER TABLE mt.tasks ADD COLUMN IF NOT EXISTS pinned BOOLEAN NOT NULL DEFAULT FALSE`,
     // v5: the sidebar look ('light' | 'dark'), kept on the account so it follows the user everywhere.
     tx`ALTER TABLE mt.users ADD COLUMN IF NOT EXISTS theme TEXT`,
+    // v6: «يومية», a checklist that clears itself every day at 5 AM. An item counts as done when
+    // checked_at is after the latest 5 AM (local, worked out on the client); reset clears it.
+    tx`
+      CREATE TABLE IF NOT EXISTS mt.daily_items (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL REFERENCES mt.users(id) ON DELETE CASCADE,
+        title TEXT NOT NULL,
+        checked_at BIGINT,
+        position DOUBLE PRECISION NOT NULL DEFAULT 0,
+        created_at BIGINT NOT NULL,
+        updated_at BIGINT NOT NULL
+      )`,
+    tx`CREATE INDEX IF NOT EXISTS daily_items_user_idx ON mt.daily_items (user_id)`,
     tx`
       INSERT INTO mt.meta (key, value) VALUES ('schema_version', ${SCHEMA_VERSION})
       ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`,
