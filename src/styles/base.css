@@ -1,0 +1,438 @@
+:root {
+  /* «ضباب»: a soft slate canvas, with each page sitting on a white panel. */
+  --bg: #eff3f7;
+  --sidebar: #eff3f7;
+  --surface: #ffffff;
+  --hover: #f5f8fb;
+  --fill: #edf1f5;
+  --fill-strong: #e1e7ee;
+  --ink: #1c2026;
+  --ink-2: #5a6472;
+  --ink-3: #939dab;
+  --line: #e9edf2;
+  --line-strong: #d8dee6;
+  --accent: #2f6fb3;
+  --accent-text: #255f9e;
+  --accent-soft: #e6eff9;
+  --accent-hover: #285f9b;
+  --danger: #e0484f;
+  --danger-soft: #fcecec;
+  --success: #22a06b;
+  --warning: #ee8a1f;
+  --today: #efaa14;
+  --overdue: #e0484f;
+
+  /* Muted hues for the few places color still carries meaning. */
+  --hue-amber: #efaa14;
+  --hue-red: #e0484f;
+  --hue-orange: #ee8a2c;
+  --hue-green: #22a06b;
+  --hue-violet: #8560db;
+  --hue-indigo: #5a63d6;
+
+  --radius-sm: 6px;
+  --radius: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+  --shadow-sm: 0 1px 2px rgba(30, 42, 60, 0.06);
+  --shadow-card: 0 1px 2px rgba(30, 42, 60, 0.04), 0 2px 12px rgba(30, 42, 60, 0.04);
+  --shadow-panel: 0 0 0 0.5px rgba(30, 42, 60, 0.06), 0 1px 3px rgba(30, 42, 60, 0.04), 0 10px 30px -14px rgba(30, 42, 60, 0.1);
+  --shadow-pop: 0 0 0 0.5px rgba(30, 42, 60, 0.08), 0 12px 32px -8px rgba(30, 42, 60, 0.16);
+  --shadow-sheet: 0 -6px 30px -10px rgba(30, 42, 60, 0.18);
+
+  --font: 'IBM Plex Sans Arabic', -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', system-ui, sans-serif;
+  --ease: cubic-bezier(0.25, 0.8, 0.25, 1);
+  --spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+  --sidebar-w: 260px;
+  --tabbar-h: 56px;
+  --dock-gap: 14px;
+
+  color-scheme: light;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: 15px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+h1, h2, h3, h4, p {
+  margin: 0;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+  background: none;
+  border: 0;
+  padding: 0;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+svg {
+  flex: none;
+}
+
+:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 60%, transparent);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ---------- Type ---------- */
+
+.h1 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 28px;
+  line-height: 1.25;
+  font-weight: 600;
+}
+
+.h1-icon {
+  display: inline-flex;
+}
+
+.h2 {
+  font-size: 17px;
+  line-height: 1.35;
+  font-weight: 600;
+}
+
+.kicker {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--ink-3);
+}
+
+.muted {
+  color: var(--ink-2);
+}
+
+.faint {
+  color: var(--ink-3);
+}
+
+.accent {
+  color: var(--accent-text);
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Buttons ---------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  height: 36px;
+  padding: 0 15px;
+  border-radius: var(--radius);
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s, transform 0.12s var(--ease), box-shadow 0.15s;
+  user-select: none;
+}
+
+.btn:active {
+  transform: scale(0.97);
+}
+
+.btn svg {
+  width: 17px;
+  height: 17px;
+}
+
+.btn-primary,
+.btn-accent {
+  background: var(--accent);
+  color: #fff;
+}
+
+.btn-primary:hover,
+.btn-accent:hover {
+  background: var(--accent-hover);
+}
+
+.btn-outline,
+.btn-soft {
+  background: var(--fill);
+  color: var(--ink);
+}
+
+.btn-outline:hover,
+.btn-soft:hover {
+  background: var(--fill-strong);
+}
+
+.btn-ghost {
+  color: var(--ink-2);
+}
+
+.btn-ghost:hover {
+  background: var(--fill);
+  color: var(--ink);
+}
+
+.btn-danger {
+  background: var(--danger);
+  color: #fff;
+}
+
+.btn-danger:hover {
+  background: color-mix(in srgb, var(--danger) 88%, #000);
+}
+
+.btn-sm {
+  height: 30px;
+  padding: 0 11px;
+  font-size: 13px;
+  border-radius: 8px;
+}
+
+.btn-block {
+  width: 100%;
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.icon-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  color: var(--ink-3);
+  transition: background 0.15s, color 0.15s;
+}
+
+.icon-btn:hover {
+  background: var(--fill);
+  color: var(--ink);
+}
+
+.icon-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.icon-btn.sm {
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+}
+
+.icon-btn.sm svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* ---------- Forms ---------- */
+
+.field {
+  display: grid;
+  gap: 6px;
+}
+
+.field > span {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-2);
+}
+
+.input,
+.textarea,
+.select {
+  width: 100%;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.textarea {
+  height: auto;
+  min-height: 90px;
+  padding: 10px 12px;
+  resize: vertical;
+  line-height: 1.6;
+}
+
+.input:focus,
+.textarea:focus,
+.select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+.input:disabled {
+  background: var(--fill);
+  color: var(--ink-2);
+}
+
+.input::placeholder,
+.textarea::placeholder {
+  color: var(--ink-3);
+}
+
+.form-error {
+  font-size: 13px;
+  color: var(--danger);
+  font-weight: 500;
+}
+
+.segmented {
+  display: inline-flex;
+  padding: 2px;
+  gap: 2px;
+  border-radius: 9px;
+  background: var(--fill);
+}
+
+.segmented button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 12px;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-2);
+  transition: background 0.15s, color 0.15s;
+}
+
+.segmented button svg {
+  width: 15px;
+  height: 15px;
+}
+
+.segmented button[aria-pressed='true'] {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow-sm), 0 0 0 0.5px rgba(30, 42, 60, 0.05);
+}
+
+.swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.swatch {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  transition: transform 0.15s var(--spring);
+}
+
+.swatch:hover {
+  transform: scale(1.1);
+}
+
+.swatch[aria-pressed='true'] {
+  box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px currentColor;
+  color: var(--ink-3);
+}
+
+.icon-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(38px, 1fr));
+  gap: 4px;
+}
+
+.icon-grid button {
+  display: grid;
+  place-items: center;
+  height: 38px;
+  border-radius: 9px;
+  color: var(--ink-2);
+  transition: background 0.12s;
+}
+
+.icon-grid button:hover {
+  background: var(--fill);
+}
+
+.icon-grid button[aria-pressed='true'] {
+  background: var(--fill-strong);
+}
+
+.icon-grid svg {
+  width: 18px;
+  height: 18px;
+}
+
+.kbd {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 5px;
+  background: var(--fill);
+  font-size: 11px;
+  font-family: ui-monospace, 'SF Mono', monospace;
+  color: var(--ink-2);
+  direction: ltr;
+}
+
+/* iOS zooms into any field under 16px on focus. */
+@media (max-width: 860px) {
+  .input,
+  .textarea,
+  .select {
+    font-size: 16px;
+  }
+}

@@ -1,0 +1,344 @@
+/* The capture sheet and the idea sheet. Both tint an inner wrapper (`--c` changes per render,
+   and Modal's className only reaches .modal), so the sheet takes on the colour of its card. */
+
+/* ---------- Capture sheet ---------- */
+
+.idea-capture .modal-body {
+  padding: 0;
+}
+
+.capture-body {
+  --c: var(--idea);
+  display: grid;
+  gap: 12px;
+  padding: 16px 20px 18px;
+  background: color-mix(in srgb, var(--c) 6%, var(--surface));
+  transition: background 0.25s;
+}
+
+.capture-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.capture-head .capture-mode {
+  margin-inline-end: auto;
+}
+
+.capture-count {
+  font-size: 12.5px;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+
+.capture-mode {
+  justify-self: start;
+}
+
+.capture-mode button[aria-pressed='true'] .lucide-lightbulb {
+  color: var(--idea);
+}
+
+.capture-mode button[aria-pressed='true'] .lucide-circle-check {
+  color: var(--accent);
+}
+
+.capture-mode .pulse {
+  color: var(--idea);
+  animation: bulb-pulse 0.5s var(--spring);
+}
+
+.capture-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.capture-input {
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  min-height: 58px;
+  max-height: 40vh;
+  overflow-y: auto;
+  padding: 4px 0;
+  border: 0;
+  background: transparent;
+  outline: none;
+  resize: none;
+  font-size: 19px;
+  font-weight: 500;
+  line-height: 1.5;
+  unicode-bidi: plaintext;
+}
+
+.capture-input::placeholder {
+  color: var(--ink-3);
+  font-weight: 400;
+}
+
+.capture-row .idea-send {
+  margin-bottom: 2px;
+}
+
+.capture-hint {
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+
+.capture-stack {
+  display: grid;
+  gap: 6px;
+}
+
+.capture-chip {
+  --c: var(--idea);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding-inline: 12px 4px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--c) 14%, #fff);
+  font-size: 14px;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 18%, transparent);
+  animation: chip-in 0.45s var(--spring) backwards;
+}
+
+.capture-chip span {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  unicode-bidi: plaintext;
+}
+
+.capture-chip .icon-btn {
+  color: color-mix(in srgb, var(--c) 55%, var(--ink));
+}
+
+.capture-chip .icon-btn:hover {
+  background: rgba(255, 255, 255, 0.7);
+  color: var(--ink);
+}
+
+.capture-more {
+  padding-inline-start: 4px;
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+
+/* ---------- Idea sheet ---------- */
+
+.idea-sheet .modal-body {
+  padding: 0;
+}
+
+.idea-sheet-body {
+  --c: var(--idea);
+  display: grid;
+  gap: 14px;
+  padding: 16px 20px 20px;
+  background: color-mix(in srgb, var(--c) 10%, var(--surface));
+  transition: background 0.25s;
+}
+
+.idea-sheet-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  color: color-mix(in srgb, var(--c) 55%, var(--ink));
+}
+
+.idea-sheet-pending {
+  display: inline-grid;
+  place-items: center;
+}
+
+.idea-sheet-pending svg {
+  width: 14px;
+  height: 14px;
+}
+
+.idea-sheet-body .icon-btn {
+  color: color-mix(in srgb, var(--c) 55%, var(--ink));
+}
+
+.idea-sheet-body .icon-btn:hover {
+  background: color-mix(in srgb, var(--c) 14%, transparent);
+  color: var(--ink);
+}
+
+.idea-sheet-head .icon-btn.on {
+  color: var(--c);
+}
+
+.idea-sheet-text {
+  width: 100%;
+  min-height: 80px;
+  border: 0;
+  background: transparent;
+  outline: none;
+  resize: none;
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1.55;
+  unicode-bidi: plaintext;
+}
+
+.idea-sheet-text::placeholder {
+  color: var(--ink-3);
+  font-weight: 400;
+}
+
+.idea-sheet .swatch {
+  width: 24px;
+  height: 24px;
+}
+
+.idea-sheet .swatch[aria-pressed='true'] {
+  color: var(--c);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--c) 10%, var(--surface)), 0 0 0 4px var(--c);
+}
+
+.idea-sheet-converted {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  padding-block: 6px;
+  padding-inline: 12px 6px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--c) 6%, #fff);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 16%, transparent);
+}
+
+.idea-sheet-link {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: start;
+  color: color-mix(in srgb, var(--c) 55%, var(--ink));
+}
+
+.idea-sheet-link span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.idea-sheet-link:hover {
+  color: var(--ink);
+}
+
+.idea-sheet-dangling {
+  flex: 1;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+.idea-sheet-converted .btn-ghost:hover {
+  background: color-mix(in srgb, var(--c) 10%, transparent);
+}
+
+.idea-sheet-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid color-mix(in srgb, var(--c) 18%, transparent);
+}
+
+.idea-sheet-actions .btn-soft {
+  background: rgba(255, 255, 255, 0.75);
+}
+
+.idea-sheet-actions .btn-soft:hover {
+  background: #fff;
+}
+
+/* ---------- Motion ---------- */
+
+@keyframes bulb-pulse {
+  35% { transform: scale(1.3); }
+}
+
+@keyframes chip-in {
+  from { opacity: 0; transform: translateY(-10px) scale(0.92); }
+}
+
+/* ---------- Phones ---------- */
+
+@media (max-width: 860px) {
+  .capture-input {
+    font-size: 18px;
+  }
+
+  .capture-hint {
+    display: none;
+  }
+
+  .idea-sheet-text {
+    font-size: 17px;
+  }
+
+  /* Sits on top of the keyboard (`--kb` comes from IdeaCapture's useKeyboardInset). */
+  .modal.idea-capture {
+    margin-bottom: var(--kb, 0px);
+    max-height: calc(92dvh - var(--kb, 0px));
+    transition: margin-bottom 0.2s var(--ease);
+  }
+
+  /* Let the tint reach the sheet's edges: the grab handle floats over it, and the
+     safe-area padding moves inside (it isn't needed while the keyboard is up). */
+  .modal.idea-capture,
+  .modal.idea-sheet {
+    position: relative;
+    padding-bottom: 0;
+  }
+
+  .modal.idea-capture::before,
+  .modal.idea-sheet::before {
+    position: absolute;
+    top: 0;
+    inset-inline: 0;
+    z-index: 1;
+  }
+
+  .capture-body {
+    padding-top: 24px;
+    padding-bottom: max(18px, calc(18px + env(safe-area-inset-bottom) - var(--kb, 0px)));
+  }
+
+  .idea-sheet-body {
+    padding-top: 24px;
+    padding-bottom: calc(20px + env(safe-area-inset-bottom));
+  }
+
+  /* Both conversions share the first row; archive and delete sit under them. */
+  .idea-sheet-actions .btn-primary,
+  .idea-sheet-actions .btn-soft:not(.idea-restore) {
+    flex: 1 1 calc(50% - 4px);
+  }
+}
+
+/* Last, so it also beats the phone transition above. */
+@media (prefers-reduced-motion: reduce) {
+  .capture-chip,
+  .capture-mode .pulse {
+    animation: none !important;
+  }
+
+  .capture-body,
+  .idea-sheet-body,
+  .modal.idea-capture {
+    transition: none;
+  }
+}

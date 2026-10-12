@@ -1,0 +1,409 @@
+.app {
+  display: grid;
+  grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
+  min-height: 100dvh;
+}
+
+/* ---------- Sidebar ---------- */
+
+.sidebar {
+  position: sticky;
+  top: 0;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 22px 14px 14px;
+  background: var(--sidebar);
+  overflow-y: auto;
+}
+
+.wordmark {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 8px;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.wordmark i {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fff;
+}
+
+.wordmark i svg {
+  width: 17px;
+  height: 17px;
+}
+
+.sidebar-actions {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px;
+}
+
+.sidebar-actions .btn {
+  justify-content: flex-start;
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow-sm), 0 0 0 0.5px rgba(30, 42, 60, 0.06);
+}
+
+.sidebar-actions .btn:hover {
+  background: var(--surface);
+  box-shadow: 0 2px 6px rgba(30, 42, 60, 0.08), 0 0 0 0.5px rgba(30, 42, 60, 0.08);
+}
+
+.sidebar-actions .btn svg {
+  color: var(--accent);
+}
+
+.sidebar-actions .icon-btn {
+  width: 36px;
+  height: 36px;
+  color: var(--ink-2);
+}
+
+.sidebar-actions .icon-btn:hover {
+  background: rgba(30, 42, 60, 0.05);
+}
+
+.nav {
+  display: grid;
+  gap: 1px;
+}
+
+.nav-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 10px;
+  margin-bottom: 2px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 36px;
+  padding: 0 11px;
+  border-radius: 9px;
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--ink);
+  transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+}
+
+.nav-item:hover {
+  background: rgba(30, 42, 60, 0.04);
+  color: var(--ink);
+}
+
+.nav-item svg {
+  width: 18px;
+  height: 18px;
+  color: var(--vc, var(--ink-3));
+  transition: color 0.15s;
+}
+
+.nav-item.active {
+  background: var(--surface);
+  color: var(--ink);
+  font-weight: 500;
+  box-shadow: var(--shadow-sm), 0 0 0 0.5px rgba(30, 42, 60, 0.05);
+}
+
+.nav-item .count {
+  margin-inline-start: auto;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--ink-3);
+}
+
+.nav-item .count.hot {
+  color: var(--overdue);
+}
+
+.project-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex: none;
+  background: var(--c, var(--ink-3));
+}
+
+.nav-project {
+  font-weight: 400;
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-top: 10px;
+}
+
+.avatar {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent-text);
+  font-size: 13px;
+  font-weight: 600;
+  flex: none;
+}
+
+.user-chip {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 5px 6px;
+  border-radius: 9px;
+}
+
+.user-chip:hover {
+  background: rgba(30, 42, 60, 0.04);
+}
+
+.user-chip .meta {
+  display: grid;
+  min-width: 0;
+  line-height: 1.3;
+  text-align: start;
+}
+
+.user-chip .meta b {
+  font-size: 13px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.user-chip .meta small {
+  font-size: 11px;
+  color: var(--ink-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------- Main ---------- */
+
+.main {
+  min-width: 0;
+  margin: 10px;
+  margin-inline-start: 0;
+  min-height: calc(100dvh - 20px);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: var(--shadow-panel);
+}
+
+.page {
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 52px 48px 140px;
+  animation: page-in 0.25s var(--ease);
+}
+
+@keyframes page-in {
+  from { opacity: 0; transform: translateY(4px); }
+}
+
+.page.wide {
+  max-width: 1240px;
+}
+
+.page-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.page-head .titles {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.page-head .subtitle {
+  font-size: 14px;
+  color: var(--ink-3);
+}
+
+.page-head .actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+}
+
+/* ---------- Mobile chrome ---------- */
+
+.topbar,
+.dock {
+  display: none;
+}
+
+@media (max-width: 860px) {
+  .app {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .sidebar {
+    display: none;
+  }
+
+  /* Phones: the fog stays as the canvas and each page is a white sheet under the topbar. */
+  .main {
+    margin: 0;
+    min-height: 100dvh;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 52px;
+    padding: 0 10px 0 6px;
+    padding-top: env(safe-area-inset-top);
+    background: color-mix(in srgb, var(--bg) 88%, transparent);
+    backdrop-filter: saturate(180%) blur(16px);
+    -webkit-backdrop-filter: saturate(180%) blur(16px);
+  }
+
+  .topbar .wordmark {
+    font-size: 17px;
+    padding: 0 6px;
+  }
+
+  .topbar .wordmark i {
+    width: 26px;
+    height: 26px;
+  }
+
+  .page {
+    min-height: calc(100dvh - 52px - env(safe-area-inset-top));
+    padding: 24px 18px calc(var(--tabbar-h) + var(--dock-gap) + 90px);
+    border-radius: 24px 24px 0 0;
+    background: var(--surface);
+    box-shadow: 0 -1px 0 rgba(30, 42, 60, 0.04), 0 -8px 24px -16px rgba(30, 42, 60, 0.12);
+  }
+
+  .h1 {
+    font-size: 27px;
+  }
+
+  .page-head {
+    flex-wrap: wrap;
+    row-gap: 12px;
+  }
+
+  .page-head .actions {
+    margin-inline-start: auto;
+  }
+
+  /* The dock: a floating pill of icon tabs, with the idea button beside it. */
+  .dock {
+    position: fixed;
+    inset-inline: 0;
+    bottom: calc(var(--dock-gap) + env(safe-area-inset-bottom));
+    z-index: 30;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    pointer-events: none;
+  }
+
+  .dock > * {
+    pointer-events: auto;
+  }
+
+  .tabbar {
+    display: flex;
+    gap: 2px;
+    height: var(--tabbar-h);
+    padding: 5px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--surface) 90%, transparent);
+    backdrop-filter: saturate(180%) blur(16px);
+    -webkit-backdrop-filter: saturate(180%) blur(16px);
+    box-shadow: var(--shadow-pop);
+  }
+
+  .tabbar a,
+  .tabbar button {
+    display: grid;
+    place-items: center;
+    width: 50px;
+    height: 100%;
+    border-radius: 999px;
+    color: var(--ink-3);
+    transition: background 0.15s, color 0.15s;
+  }
+
+  .tabbar svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  .tabbar .active {
+    color: var(--vc, var(--accent));
+    background: color-mix(in srgb, var(--vc, var(--accent)) 12%, transparent);
+  }
+
+  .fab {
+    display: grid;
+    place-items: center;
+    width: var(--tabbar-h);
+    height: var(--tabbar-h);
+    flex: none;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #fff;
+    box-shadow: 0 6px 16px -6px rgba(30, 42, 60, 0.35);
+    transition: transform 0.2s var(--spring);
+  }
+
+  .fab:active {
+    transform: scale(0.92);
+  }
+
+  .fab svg {
+    width: 24px;
+    height: 24px;
+  }
+}
+
+@media (min-width: 861px) and (max-width: 1100px) {
+  :root {
+    --sidebar-w: 230px;
+  }
+
+  .page {
+    padding-inline: 30px;
+  }
+}
