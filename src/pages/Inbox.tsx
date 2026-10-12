@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { Inbox } from 'lucide-react';
-import { byCompletedDesc, byPosition, useTaskList } from '../lib/selectors';
+import { byCompletedDesc, byPinned, useTaskList } from '../lib/selectors';
 import { InlineAdd } from '../components/QuickAdd';
 import { SortableGroup, SortableGroups } from '../components/SortableGroups';
 import { commitMove, CompletedSection, OverlayRow, SortableTaskRows } from '../components/TaskLists';
@@ -12,7 +12,7 @@ export function InboxPage() {
   const { groups, done } = useMemo(() => {
     const mine = tasks.filter((t) => !t.projectId && !t.parentId);
     return {
-      groups: { inbox: mine.filter((t) => !t.completed).sort(byPosition).map((t) => t.id) },
+      groups: { inbox: mine.filter((t) => !t.completed).sort(byPinned).map((t) => t.id) },
       done: mine.filter((t) => t.completed).sort(byCompletedDesc),
     };
   }, [tasks]);

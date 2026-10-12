@@ -1,11 +1,11 @@
-import { useMemo, useRef, useState, type KeyboardEvent } from 'react';
+import { useMemo, useRef, useState, type ClipboardEvent, type KeyboardEvent } from 'react';
 import { CalendarDays, Clock, Flag, Folder, Hash, Inbox, Plus, Repeat } from 'lucide-react';
 import clsx from 'clsx';
-import { addTask, closeQuickAdd, openIdeaCapture, selectTask, toast, useStore, type QuickAddDefaults } from '../store';
+import { addTask, closeQuickAdd, deleteTasks, openIdeaCapture, selectTask, toast, useStore, type QuickAddDefaults } from '../store';
 import { parseQuickAdd, type Parsed, type TokenKind } from '../lib/parse';
-import { relativeDay } from '../lib/dates';
+import { relativeDay, tasksLabel } from '../lib/dates';
 import { useProjectList } from '../lib/selectors';
-import type { Priority, Task } from '../types';
+import type { Priority, Project, Task } from '../types';
 import { MenuItem, Modal, Popover, usePopover } from './ui';
 import { DatePicker } from './DatePicker';
 import { CaptureModeSwitch } from './IdeaCapture';
@@ -39,6 +39,32 @@ function build(parsed: Parsed, defaults: QuickAddDefaults, extra: Partial<Task> 
     tags: parsed.tags,
     ...extra,
   };
+}
+
+const LINE_MARK_RE = /^\s*(?:[-•*–·▪◦]|\[[ xX]?\]|[☐☑✓✔]|\d+[.)])\s*/;
+
+/** Keep-style paste: text with several lines becomes one task per line, each parsed like typed input.
+ *  The first and last lines join whatever surrounds the cursor. Returns false (normal paste) for one line. */
+function pasteAsTasks(
+  e: ClipboardEvent<HTMLInputElement>,
+  projects: Project[],
+  make: (parsed: Parsed) => Partial<Task> & { title: string },
+): boolean {
+  const lines = e.clipboardData.getData('text/plain').replace(/\r\n?/g, '\n').split('\n')
+    .map((l) => l.replace(LINE_MARK_RE, '').trim())
+    .filter(Boolean);
+  if (lines.length < 2) return false;
+  e.preventDefault();
+  const input = e.currentTarget;
+  const before = input.value.slice(0, input.selectionStart ?? input.value.length).trim();
+  const after = input.value.slice(input.selectionEnd ?? input.value.length).trim();
+  lines[0] = `${before} ${lines[0]}`.trim();
+  lines[lines.length - 1] = `${lines[lines.length - 1]} ${after}`.trim();
+
+  const now = Date.now();
+  const ids = lines.slice(0, 200).map((line, i) => addTask({ ...make(parseQuickAdd(line, projects)), position: now + i }).id);
+  toast(`أُضيفت ${tasksLabel(ids.length)}`, { label: 'تراجع', run: () => deleteTasks(ids, { silent: true }) });
+  return true;
 }
 
 /** Inline "+ أضف مهمة" row that expands into a smart input. */
@@ -81,6 +107,7 @@ export function InlineAdd({ defaults = {}, label = 'أضف مهمة', autoOpen =
         value={text}
         onChange={(e) => setText(e.target.value)}
         onKeyDown={onKey}
+        onPaste={(e) => { if (pasteAsTasks(e, projects, (p) => build(p, defaults))) setText(''); }}
         onBlur={() => !text.trim() && setOpen(false)}
         placeholder="مثال: تسليم التقرير بكرا الساعة 10 !!"
         enterKeyHint="done"
@@ -137,6 +164,9 @@ function QuickAddDialog({ defaults }: { defaults: QuickAddDefaults }) {
             e.preventDefault();
             submit();
           }
+        }}
+        onPaste={(e) => {
+          if (pasteAsTasks(e, projects, (p) => build(p, effective, { priority: p.priority ?? manual.priority ?? 0 }))) closeQuickAdd();
         }}
         placeholder="شو بدك تنجز؟"
         enterKeyHint="done"

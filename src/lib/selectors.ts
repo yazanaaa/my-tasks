@@ -3,15 +3,17 @@ import { useStore } from '../store';
 import { addDays, diffDays, todayKey, toKey, weekday } from './dates';
 import type { Habit, Idea, Project, Section, Task } from '../types';
 
-/** Sort for date-driven views: timed tasks first by time, then priority, then manual order. */
+/** Sort for date-driven views: pinned first, then timed tasks by time, then manual (dragged) order. */
 export function byAgenda(a: Task, b: Task): number {
+  if (!!a.pinned !== !!b.pinned) return a.pinned ? -1 : 1;
   if (a.dueTime && b.dueTime && a.dueTime !== b.dueTime) return a.dueTime < b.dueTime ? -1 : 1;
   if (!!a.dueTime !== !!b.dueTime) return a.dueTime ? -1 : 1;
-  if (a.priority !== b.priority) return b.priority - a.priority;
   return a.position - b.position;
 }
 
 export const byPosition = (a: { position: number }, b: { position: number }) => a.position - b.position;
+/** Lists with manual order: pinned first, then position. */
+export const byPinned = (a: Task, b: Task) => Number(!!b.pinned) - Number(!!a.pinned) || a.position - b.position;
 export const byCompletedDesc = (a: Task, b: Task) => (b.completedAt ?? 0) - (a.completedAt ?? 0);
 
 export function useTaskList(): Task[] {

@@ -6,7 +6,7 @@ import {
 import {
   addSection, deleteProject, deleteSection, reorderSections, updateProject, updateSection, useStore,
 } from '../store';
-import { byCompletedDesc, byPosition, useSectionsOf, useSubtaskCounts, useTaskList } from '../lib/selectors';
+import { byCompletedDesc, byPinned, useSectionsOf, useSubtaskCounts, useTaskList } from '../lib/selectors';
 import { Icon } from '../components/Icon';
 import { openProjectForm } from '../components/Forms';
 import { PageTitle, ProgressPie } from '../components/PageTitle';
@@ -33,7 +33,7 @@ function ProjectView({ project }: { project: Project }) {
 
   const { groups, done, total } = useMemo(() => {
     const mine = tasks.filter((t) => t.projectId === project.id && !t.parentId);
-    const open = mine.filter((t) => !t.completed).sort(byPosition);
+    const open = mine.filter((t) => !t.completed).sort(byPinned);
     const valid = new Set(sections.map((s) => s.id));
     const g: Record<string, string[]> = { [none]: [] };
     for (const s of sections) g[s.id] = [];

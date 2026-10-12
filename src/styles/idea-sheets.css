@@ -100,7 +100,7 @@
   min-height: 38px;
   padding-inline: 12px 4px;
   border-radius: 12px;
-  background: color-mix(in srgb, var(--c) 14%, #fff);
+  background: color-mix(in srgb, var(--c) 14%, var(--surface));
   font-size: 14px;
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 18%, transparent);
   animation: chip-in 0.45s var(--spring) backwards;
@@ -120,7 +120,7 @@
 }
 
 .capture-chip .icon-btn:hover {
-  background: rgba(255, 255, 255, 0.7);
+  background: color-mix(in srgb, var(--surface) 70%, transparent);
   color: var(--ink);
 }
 
@@ -212,7 +212,7 @@
   padding-block: 6px;
   padding-inline: 12px 6px;
   border-radius: 12px;
-  background: color-mix(in srgb, var(--c) 6%, #fff);
+  background: color-mix(in srgb, var(--c) 6%, var(--surface));
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 16%, transparent);
 }
 
@@ -257,11 +257,11 @@
 }
 
 .idea-sheet-actions .btn-soft {
-  background: rgba(255, 255, 255, 0.75);
+  background: color-mix(in srgb, var(--surface) 75%, transparent);
 }
 
 .idea-sheet-actions .btn-soft:hover {
-  background: #fff;
+  background: var(--surface);
 }
 
 /* ---------- Motion ---------- */

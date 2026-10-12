@@ -5,15 +5,15 @@ import {
 
 // Each view owns a color: it tints its sidebar icon and its page title icon.
 export const VIEWS = {
-  today: { label: 'اليوم', icon: Star, color: '#EFAA14', to: '/' },
-  upcoming: { label: 'القادم', icon: CalendarDays, color: '#E0484F', to: '/upcoming' },
-  inbox: { label: 'الوارد', icon: Inbox, color: '#2F6FB3', to: '/inbox' },
-  ideas: { label: 'الأفكار', icon: Lightbulb, color: '#EC4C9A', to: '/ideas' },
-  calendar: { label: 'التقويم', icon: CalendarRange, color: '#8560DB', to: '/calendar' },
-  habits: { label: 'العادات', icon: Flame, color: '#EE8A2C', to: '/habits' },
-  stats: { label: 'الإحصائيات', icon: ChartColumn, color: '#22A06B', to: '/stats' },
-  projects: { label: 'المشاريع', icon: FolderKanban, color: '#5A63D6', to: '/projects' },
-  settings: { label: 'الإعدادات', icon: Settings, color: '#8E96A0', to: '/settings' },
+  today: { label: 'اليوم', icon: Star, color: 'var(--hue-amber)', to: '/' },
+  upcoming: { label: 'القادم', icon: CalendarDays, color: 'var(--hue-red)', to: '/upcoming' },
+  inbox: { label: 'الوارد', icon: Inbox, color: 'var(--accent)', to: '/inbox' },
+  ideas: { label: 'الأفكار', icon: Lightbulb, color: 'var(--idea)', to: '/ideas' },
+  calendar: { label: 'التقويم', icon: CalendarRange, color: 'var(--hue-violet)', to: '/calendar' },
+  habits: { label: 'العادات', icon: Flame, color: 'var(--hue-orange)', to: '/habits' },
+  stats: { label: 'الإحصائيات', icon: ChartColumn, color: 'var(--hue-green)', to: '/stats' },
+  projects: { label: 'المشاريع', icon: FolderKanban, color: 'var(--hue-indigo)', to: '/projects' },
+  settings: { label: 'الإعدادات', icon: Settings, color: 'var(--ink-3)', to: '/settings' },
 } satisfies Record<string, { label: string; icon: LucideIcon; color: string; to: string }>;
 
 export type ViewKey = keyof typeof VIEWS;

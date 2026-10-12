@@ -3,7 +3,7 @@ import { HttpError, json, readBody, route } from './_lib/http.js';
 import { publicUser, requireUser } from './_lib/auth.js';
 import { hashPassword, verifyPassword } from './_lib/security.js';
 
-// PATCH {name?, currentPassword?, newPassword?}: the signed-in user's own profile.
+// PATCH {name?, theme?, currentPassword?, newPassword?}: the signed-in user's own profile.
 export default route(async (req, res) => {
   if (req.method !== 'PATCH') throw new HttpError(405, 'method_not_allowed');
   await ensureSchema();
@@ -13,6 +13,8 @@ export default route(async (req, res) => {
   const [row] = await db`SELECT * FROM mt.users WHERE id = ${user.id}`;
 
   const name = body.name === undefined ? row.name : String(body.name).trim().slice(0, 80);
+  if (body.theme !== undefined && body.theme !== 'light' && body.theme !== 'dark') throw new HttpError(400, 'invalid_theme');
+  const theme = body.theme === undefined ? row.theme : body.theme;
   let passwordHash = row.password_hash;
   if (body.newPassword !== undefined) {
     if (!await verifyPassword(String(body.currentPassword || ''), row.password_hash)) {
@@ -22,7 +24,7 @@ export default route(async (req, res) => {
     passwordHash = await hashPassword(String(body.newPassword));
   }
   const [updated] = await db`
-    UPDATE mt.users SET name = ${name}, password_hash = ${passwordHash}, updated_at = ${Date.now()}
+    UPDATE mt.users SET name = ${name}, theme = ${theme}, password_hash = ${passwordHash}, updated_at = ${Date.now()}
     WHERE id = ${user.id} RETURNING *`;
   if (body.newPassword !== undefined) {
     await db`DELETE FROM mt.sessions WHERE user_id = ${user.id} AND token_hash <> ${tokenHash}`;

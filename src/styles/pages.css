@@ -916,7 +916,7 @@
 }
 
 .chart .bar {
-  fill: color-mix(in srgb, var(--accent) 30%, #fff);
+  fill: color-mix(in srgb, var(--accent) 30%, var(--surface));
   transition: fill 0.12s;
 }
 
@@ -925,7 +925,7 @@
 }
 
 .chart .bar.hover {
-  fill: color-mix(in srgb, var(--accent) 50%, #fff);
+  fill: color-mix(in srgb, var(--accent) 50%, var(--surface));
 }
 
 .chart .bar.today.hover {

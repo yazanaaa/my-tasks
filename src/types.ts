@@ -5,6 +5,8 @@ export interface User {
   email: string;
   name: string;
   role: 'admin' | 'user';
+  /** Sidebar look saved on the account; null until the user picks one. */
+  theme: 'light' | 'dark' | null;
 }
 
 export interface Task {
@@ -21,6 +23,7 @@ export interface Task {
   tags: string[];
   completed: boolean;
   completedAt: number | null;
+  pinned: boolean;
   position: number;
   createdAt: number;
   updatedAt: number;

@@ -160,6 +160,7 @@ export function plural(n: number, [one, two, few, many]: [string, string, string
 
 export const daysLabel = (n: number) => plural(n, ['يوم', 'يومين', 'أيام', 'يومًا']);
 export const ideasLabel = (n: number) => plural(n, ['فكرة', 'فكرتين', 'أفكار', 'فكرة']);
+export const tasksLabel = (n: number) => plural(n, ['مهمة', 'مهمتين', 'مهام', 'مهمة']);
 
 /** هلأ، قبل 5 دقايق، مبارح، قبل أسبوعين، 12 آب … Days are counted on the local calendar. */
 export function timeAgo(ts: number, now = Date.now()): string {

@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
-  CalendarDays, ChevronDown, Clock, CornerUpRight, Flag, Folder, Hash, Inbox, Lightbulb, ListChecks, Plus, Repeat,
-  Trash2, X,
+  CalendarDays, ChevronDown, Clock, CornerUpRight, Flag, Folder, Hash, Inbox, Lightbulb, ListChecks, Pin, PinOff, Plus,
+  Repeat, Trash2, X,
 } from 'lucide-react';
 import clsx from 'clsx';
 import { addTask, deleteTasks, selectIdea, selectTask, toggleTask, updateTask, useStore } from '../store';
@@ -107,6 +107,17 @@ function TaskDetail({ task }: { task: Task }) {
           <ChevronDown />
         </button>
         <span className="spacer" />
+        {!task.parentId && (
+          <button
+            className={clsx('icon-btn', task.pinned && 'pin-on')}
+            aria-label={task.pinned ? 'إلغاء التثبيت' : 'تثبيت'}
+            title={task.pinned ? 'إلغاء التثبيت' : 'تثبيت'}
+            aria-pressed={task.pinned}
+            onClick={() => updateTask(task.id, { pinned: !task.pinned })}
+          >
+            {task.pinned ? <PinOff /> : <Pin />}
+          </button>
+        )}
         <button className="icon-btn" aria-label="حذف المهمة" onClick={() => deleteTasks([task.id])}><Trash2 /></button>
         <button className="icon-btn" aria-label="إغلاق" onClick={() => selectTask(null)}><X /></button>
       </div>

@@ -1,7 +1,7 @@
 # مهامي — نظام إنتاجية شخصي
 
 تطبيق React + Vite + TypeScript: مهام يومية، أفكار (جدار ملوّن وإضافة بثانيتين)، مشاريع (قائمة/لوحة Kanban)، تقويم، عادات، وإحصائيات.
-الهوية «ضباب»: وضع فاتح هادي، خلفية وsidebar رمادي مزرق `#eff3f7` والصفحة لوحة بيضا عايمة (`.main`، وعالجوال `.page` ورقة بيضا بزوايا مدوّرة من فوق)، نص `#1c2026` وأزرق `#2f6fb3` للتمييز، ووردي الأفكار `#EC4C9A`. كل صفحة إلها لون (`VIEWS` بـ `PageTitle.tsx`) بيلوّن أيقونتها بالـ sidebar وبالعنوان، وباقي الألوان من `--hue-*`. بدون تدرّجات أو توهّجات ملوّنة. خط IBM Plex Sans Arabic، RTL كامل. الـ tokens في `src/styles/base.css`.
+الهوية «ضباب»: وضع فاتح هادي، خلفية وsidebar رمادي مزرق `#e4eaf1` والصفحة لوحة بيضا عايمة (`.main`، وعالجوال `.page` ورقة بيضا بزوايا مدوّرة من فوق)، نص `#12161b` وأزرق `#2160b5` للتمييز، ووردي الأفكار `#EC4C9A`. كل صفحة إلها لون (`VIEWS` بـ `PageTitle.tsx`) بيلوّن أيقونتها بالـ sidebar وبالعنوان، وباقي الألوان من `--hue-*`. بدون تدرّجات أو توهّجات ملوّنة. في «قائمة جانبية بنفسجية» (`:root[data-theme="dark"]` بآخر `layout.css`): الـ sidebar والإطار حوالين الصفحة بس بيصيروا تدرّج بنفسجي (`#6a35f4` → `#8d68f7`) بكتابة وأيقونات بيضا، والصفحة البيضا بتضل زي ما هي. هاد الاستثناء الوحيد لقاعدة «بدون تدرّجات»، وطلبه المستخدم بصورة مرجعية. بينقلب من زر القمر بأسفل الـ sidebar وبالشريط العلوي عالجوال، وبينحفظ على الحساب (`users.theme`، v5، عبر `PATCH /api/account {theme}` من `toggleTheme` بـ `store.ts`) فبيضل ثابت على كل الأجهزة لحد ما المستخدم يغيّره، واختيار الحساب بيغلب عند كل تحميل. نسخة منه بـ localStorage (`mt:theme`، `src/lib/themeMode.ts`) بس عشان `index.html` يطبّقه قبل أول رسم. عشان يشتغل، الألوان لازم تكون tokens: ما في `#fff` ثابت بالخلفيات (استعمل `var(--surface)`). خط IBM Plex Sans Arabic، RTL كامل. الـ tokens في `src/styles/base.css`.
 
 ## الروابط
 
@@ -42,7 +42,8 @@ npm.cmd run build      # tsc ثم vite build إلى dist/
 
 ## البيانات (schema `mt`)
 
-- `tasks: {id, projectId?, sectionId?, parentId?, title, notes, priority 0-3, dueDate?, dueTime?, recurrence?, tags[], completed, completedAt?, position}`
+- `tasks: {id, projectId?, sectionId?, parentId?, title, notes, priority 0-3, dueDate?, dueTime?, recurrence?, tags[], completed, completedAt?, pinned, position}`
+  - `pinned` (v4): المهمة المثبّتة بتطلع أول قائمتها (`byPinned`/`byAgenda`)، وعلى «اليوم» بقسم «مثبّتة» إذا ما إلها تاريخ أو تاريخها لقدّام. المهام الفرعية ما بتتثبّت.
 - `projects: {id, name, description, color, icon, view: list|board, archived, position}` و `sections: {id, projectId, name, position}`
 - `habits: {id, name, color, icon, days[0-6], archived, position}` و `habit_logs: {habitId, date}`
 - `ideas: {id, text ≤ 4000, tags[], color, pinned, archived, source: app|palette|share|link|draft|import, taskId?, projectId?, convertedAt?, surfacedAt?, createdAt, updatedAt}`
@@ -52,8 +53,8 @@ npm.cmd run build      # tsc ثم vite build إلى dist/
   - الإنشاء idempotent (`ON CONFLICT (id) DO NOTHING`) والعميل يبعت `createdAt`، فإعادة المحاولة من الـ outbox آمنة.
   - `bootstrap` يرجّع الأفكار الحية والمحوّلة والمؤرشفة اللي تعدّلت آخر 400 يوم، الأحدث أولًا.
 - التكرار: `daily | weekdays | weekly | monthly | yearly | every:N:day|week|month | days:0,3`. عند إنجاز مهمة متكررة تبقى كسجل وتُنشأ نسخة بالموعد التالي.
-- الترتيب بـ `position` كسري (منتصف الجارين عند السحب).
-- `SCHEMA_VERSION` في `_lib/db.js` هلأ `'2'`. **أي تغيير بالـ schema لازم يرفعه**، وإلا `migrate()` بيرجع بدري على القواعد الموجودة. المقارنة رقمية (`>=`) فالنشر الأقدم ما بيعيد الـ migration فوق schema أحدث. كل جملة `IF NOT EXISTS`، والجمل الجديدة قبل `INSERT INTO mt.meta`.
+- الترتيب بـ `position` كسري (منتصف الجارين عند السحب). السحب شغّال بالوارد والمشاريع والقادم و«لليوم». بالصفحات المرتبطة بتاريخ (`byAgenda`): المثبّتة أول، بعدين اللي إلها وقت حسب الوقت، وبعدين ترتيب السحب. الأولوية ما بتغيّر الترتيب (بتبيّن بلون الدائرة).
+- `SCHEMA_VERSION` في `_lib/db.js` هلأ `'5'`. (v3 انكتب بالقاعدة قبل ما تنضاف جملة `pinned`، فـ v4 بيعيدها.) ارفع الرقم وضيف الجمل بنفس التعديل، لأنه `npm run dev` بيشغّل الـ migration على قاعدة الإنتاج أول ما ينحفظ الملف. **أي تغيير بالـ schema لازم يرفعه**، وإلا `migrate()` بيرجع بدري على القواعد الموجودة. المقارنة رقمية (`>=`) فالنشر الأقدم ما بيعيد الـ migration فوق schema أحدث. كل جملة `IF NOT EXISTS`، والجمل الجديدة قبل `INSERT INTO mt.meta`.
 
 ## الاختصارات والروابط
 

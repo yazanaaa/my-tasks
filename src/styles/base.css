@@ -1,42 +1,42 @@
 :root {
   /* «ضباب»: a soft slate canvas, with each page sitting on a white panel. */
-  --bg: #eff3f7;
-  --sidebar: #eff3f7;
+  --bg: #e4eaf1;
+  --sidebar: #e4eaf1;
   --surface: #ffffff;
-  --hover: #f5f8fb;
-  --fill: #edf1f5;
-  --fill-strong: #e1e7ee;
-  --ink: #1c2026;
-  --ink-2: #5a6472;
-  --ink-3: #939dab;
-  --line: #e9edf2;
-  --line-strong: #d8dee6;
-  --accent: #2f6fb3;
-  --accent-text: #255f9e;
-  --accent-soft: #e6eff9;
-  --accent-hover: #285f9b;
-  --danger: #e0484f;
-  --danger-soft: #fcecec;
-  --success: #22a06b;
-  --warning: #ee8a1f;
-  --today: #efaa14;
-  --overdue: #e0484f;
+  --hover: #f1f4f8;
+  --fill: #e8edf3;
+  --fill-strong: #d8e0e9;
+  --ink: #12161b;
+  --ink-2: #444e5b;
+  --ink-3: #747f8d;
+  --line: #e0e6ed;
+  --line-strong: #c9d2dc;
+  --accent: #2160b5;
+  --accent-text: #1b5299;
+  --accent-soft: #dfe9f7;
+  --accent-hover: #1b5299;
+  --danger: #d8343d;
+  --danger-soft: #fbe7e8;
+  --success: #138a58;
+  --warning: #e57a0e;
+  --today: #e59c00;
+  --overdue: #d8343d;
 
-  /* Muted hues for the few places color still carries meaning. */
-  --hue-amber: #efaa14;
-  --hue-red: #e0484f;
-  --hue-orange: #ee8a2c;
-  --hue-green: #22a06b;
-  --hue-violet: #8560db;
-  --hue-indigo: #5a63d6;
+  /* The hues for the places where color carries meaning. */
+  --hue-amber: #e59c00;
+  --hue-red: #d8343d;
+  --hue-orange: #e5761a;
+  --hue-green: #138a58;
+  --hue-violet: #7144d1;
+  --hue-indigo: #4650cc;
 
   --radius-sm: 6px;
   --radius: 10px;
   --radius-lg: 14px;
   --radius-xl: 18px;
-  --shadow-sm: 0 1px 2px rgba(30, 42, 60, 0.06);
-  --shadow-card: 0 1px 2px rgba(30, 42, 60, 0.04), 0 2px 12px rgba(30, 42, 60, 0.04);
-  --shadow-panel: 0 0 0 0.5px rgba(30, 42, 60, 0.06), 0 1px 3px rgba(30, 42, 60, 0.04), 0 10px 30px -14px rgba(30, 42, 60, 0.1);
+  --shadow-sm: 0 1px 2px rgba(30, 42, 60, 0.1);
+  --shadow-card: 0 1px 2px rgba(30, 42, 60, 0.06), 0 2px 12px rgba(30, 42, 60, 0.06);
+  --shadow-panel: 0 0 0 1px rgba(30, 42, 60, 0.07), 0 1px 3px rgba(30, 42, 60, 0.06), 0 12px 32px -14px rgba(30, 42, 60, 0.16);
   --shadow-pop: 0 0 0 0.5px rgba(30, 42, 60, 0.08), 0 12px 32px -8px rgba(30, 42, 60, 0.16);
   --shadow-sheet: 0 -6px 30px -10px rgba(30, 42, 60, 0.18);
 

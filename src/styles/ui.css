@@ -23,7 +23,7 @@
 /* ---------- Checkbox ---------- */
 
 .check {
-  --pc: #c5ccd4;
+  --pc: #9ba6b3;
   display: grid;
   place-items: center;
   flex: none;

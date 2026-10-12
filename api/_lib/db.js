@@ -5,7 +5,7 @@ import { hashPassword } from './security.js';
 // Everything lives in its own Postgres schema so the new app starts clean
 // without touching the tables of the previous version.
 // Bump on every schema change, or migrate() returns early on existing databases.
-const SCHEMA_VERSION = '2';
+const SCHEMA_VERSION = '5';
 
 let sqlInstance = null;
 let schemaReady = null;
@@ -154,6 +154,10 @@ async function migrate() {
         updated_at BIGINT NOT NULL
       )`,
     tx`CREATE INDEX IF NOT EXISTS ideas_user_idx ON mt.ideas (user_id, archived)`,
+    // v4: pinned tasks float to the top of their list (v3 shipped without the column).
+    tx`ALTER TABLE mt.tasks ADD COLUMN IF NOT EXISTS pinned BOOLEAN NOT NULL DEFAULT FALSE`,
+    // v5: the sidebar look ('light' | 'dark'), kept on the account so it follows the user everywhere.
+    tx`ALTER TABLE mt.users ADD COLUMN IF NOT EXISTS theme TEXT`,
     tx`
       INSERT INTO mt.meta (key, value) VALUES ('schema_version', ${SCHEMA_VERSION})
       ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`,

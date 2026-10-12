@@ -1,12 +1,12 @@
 export const PROJECT_COLORS = [
-  '#2F6FB3', // blue
-  '#EE8A2C', // orange
-  '#22A06B', // green
-  '#8560DB', // violet
+  '#2160B5', // blue
+  '#E5761A', // orange
+  '#138A58', // green
+  '#7144D1', // violet
   '#E0457B', // pink
-  '#EFAA14', // honey
+  '#E59C00', // honey
   '#1597A6', // teal
-  '#5A63D6', // indigo
+  '#4650CC', // indigo
   '#9A6B48', // walnut
   '#3A4049', // graphite
 ];

@@ -1,6 +1,7 @@
 import { memo, useState, type HTMLAttributes } from 'react';
 import {
-  CalendarDays, CalendarClock, Copy, GripVertical, ListChecks, MoreHorizontal, Repeat, StickyNote, Trash2, Flag, Star,
+  CalendarDays, CalendarClock, Copy, GripVertical, ListChecks, MoreHorizontal, Pin, PinOff, Repeat, StickyNote, Trash2,
+  Flag, Star,
 } from 'lucide-react';
 import clsx from 'clsx';
 import { addTask, deleteTasks, selectTask, toggleTask, updateTask, useStore } from '../store';
@@ -57,7 +58,10 @@ export const TaskRow = memo(function TaskRow({
       )}
       <Checkbox checked={checked} onChange={onCheck} priority={task.priority} />
       <div className="task-body">
-        <div className="task-title">{task.title}</div>
+        <div className="task-title">
+          {task.pinned && !task.completed && <Pin className="task-pin" aria-label="مثبّتة" />}
+          {task.title}
+        </div>
         {hasMeta ? (
           <div className="task-meta">
             {showDate && task.dueDate && (
@@ -95,6 +99,13 @@ export const TaskRow = memo(function TaskRow({
           <div onClick={(e) => e.stopPropagation()}>
             {task.dueDate !== todayKey() && (
               <MenuItem icon={<Star color="var(--hue-amber)" fill="var(--hue-amber)" />} label="لليوم" onClick={() => { updateTask(task.id, { dueDate: todayKey() }); menu.close(); }} />
+            )}
+            {!task.parentId && (
+              <MenuItem
+                icon={task.pinned ? <PinOff /> : <Pin />}
+                label={task.pinned ? 'إلغاء التثبيت' : 'تثبيت فوق'}
+                onClick={() => { updateTask(task.id, { pinned: !task.pinned }); menu.close(); }}
+              />
             )}
             <div className="menu-label">الأولوية</div>
             <div className="prio-row">

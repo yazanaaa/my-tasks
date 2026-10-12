@@ -18,13 +18,13 @@ export function sessionCookie(token, maxAge = Math.floor(SESSION_TTL / 1000)) {
   return `${SESSION_COOKIE}=${encodeURIComponent(token)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}${secure}`;
 }
 
-export const publicUser = (u) => ({ id: u.id, email: u.email, name: u.name, role: u.role });
+export const publicUser = (u) => ({ id: u.id, email: u.email, name: u.name, role: u.role, theme: u.theme ?? null });
 
 export async function getSession(req) {
   const token = cookies(req)[SESSION_COOKIE];
   if (!token) return null;
   const rows = await sql()`
-    SELECT u.id, u.email, u.name, u.role, u.active, s.token_hash
+    SELECT u.id, u.email, u.name, u.role, u.theme, u.active, s.token_hash
     FROM mt.sessions s
     JOIN mt.users u ON u.id = s.user_id
     WHERE s.token_hash = ${hashToken(token)} AND s.expires_at > ${Date.now()}

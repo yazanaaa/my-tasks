@@ -6,7 +6,7 @@
   align-items: flex-start;
   gap: 12px;
   margin: 0 -10px;
-  padding: 9px 10px;
+  padding: 12px 10px;
   border-radius: 10px;
   cursor: pointer;
   transition: background 0.15s;
@@ -19,6 +19,51 @@
 
 .task.selected {
   background: var(--accent-soft);
+}
+
+/* A hairline under each row, starting at the title, so neighbors read as separate tasks. */
+.task::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  inset-inline: 42px 10px;
+  height: 1px;
+  background: var(--line);
+  pointer-events: none;
+  transition: opacity 0.15s;
+}
+
+.task:hover::after,
+.task.selected::after,
+.drag-overlay .task::after,
+.board-card .task::after {
+  opacity: 0;
+}
+
+.task-pin {
+  display: inline-block;
+  width: 13px;
+  height: 13px;
+  margin-inline-end: 6px;
+  vertical-align: -1px;
+  color: var(--accent);
+  fill: color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+.pinned-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pinned-head svg {
+  width: 16px;
+  height: 16px;
+  color: var(--accent);
+}
+
+.icon-btn.pin-on {
+  color: var(--accent);
 }
 
 .task .check {

@@ -5,6 +5,7 @@ import { cleanIdeaText, extractTags, nextIdeaColor, pickIdeaColor, splitIdea, st
 import {
   clearDraft, forgetUser, lastUserId, readAllDrafts, readOutbox, rememberUser, writeOutbox,
 } from './lib/outbox';
+import { currentThemeMode, setThemeMode } from './lib/themeMode';
 import type { Bootstrap, Habit, Idea, IdeaSource, Project, Section, Task, User } from './types';
 
 type Rec<T> = Record<string, T>;
@@ -51,7 +52,7 @@ export const logKey = (habitId: string, date: string) => `${habitId}|${date}`;
 
 const TASK_FIELDS = [
   'title', 'notes', 'projectId', 'sectionId', 'parentId', 'priority', 'dueDate', 'dueTime',
-  'recurrence', 'tags', 'completed', 'completedAt', 'position', 'createdAt',
+  'recurrence', 'tags', 'completed', 'completedAt', 'pinned', 'position', 'createdAt',
 ] as const;
 const taskPayload = (t: Task) => ({ id: t.id, ...Object.fromEntries(TASK_FIELDS.map((k) => [k, t[k]])) });
 
@@ -132,6 +133,8 @@ export async function load() {
       if (idea) ideas[id] = idea;
       else delete ideas[id];
     }
+    // The account's saved look wins over this device's, so it's the same everywhere they sign in.
+    if (data.user.theme) setThemeMode(data.user.theme);
     set({
       status: 'ready',
       user: data.user,
@@ -205,6 +208,16 @@ export async function updateAccount(patch: { name?: string; currentPassword?: st
   set({ user });
 }
 
+/** Flips the sidebar look on this device right away and saves it on the account. */
+export function toggleTheme() {
+  const theme = currentThemeMode() === 'dark' ? 'light' : 'dark';
+  setThemeMode(theme);
+  const user = get().user;
+  if (!user) return;
+  set({ user: { ...user, theme } });
+  persist(() => api.patch('account', { theme }));
+}
+
 /* ---------- UI ---------- */
 
 let captureKey = 0;
@@ -242,6 +255,7 @@ export function addTask(input: Partial<Task> & { title: string }): Task {
     tags: [],
     completed: false,
     completedAt: null,
+    pinned: false,
     position: now,
     createdAt: now,
     updatedAt: now,
@@ -348,7 +362,7 @@ export function deleteTasks(ids: string[], { silent = false } = {}) {
 export function addProject(input: Partial<Project> & { name: string }): Project {
   const now = Date.now();
   const project: Project = {
-    id: newId(), description: '', color: '#2F6FB3', icon: 'folder', view: 'list', dueDate: null,
+    id: newId(), description: '', color: '#2160B5', icon: 'folder', view: 'list', dueDate: null,
     archived: false, position: now, createdAt: now, updatedAt: now, ...input,
   };
   set((s) => ({ projects: { ...s.projects, [project.id]: project } }));
@@ -421,7 +435,7 @@ export function deleteSection(id: string) {
 export function addHabit(input: Partial<Habit> & { name: string }): Habit {
   const now = Date.now();
   const habit: Habit = {
-    id: newId(), color: '#EE8A2C', icon: 'flame', days: [0, 1, 2, 3, 4, 5, 6], archived: false,
+    id: newId(), color: '#E5761A', icon: 'flame', days: [0, 1, 2, 3, 4, 5, 6], archived: false,
     position: now, createdAt: now, updatedAt: now, ...input,
   };
   set((s) => ({ habits: { ...s.habits, [habit.id]: habit } }));

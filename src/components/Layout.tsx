@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
-  CalendarDays, Check, Ellipsis, FolderKanban, Lightbulb, LogOut, Plus, Search, Settings, Star,
+  CalendarDays, Check, Ellipsis, FolderKanban, Lightbulb, LogOut, Moon, Plus, Search, Settings, Star, Sun,
 } from 'lucide-react';
 import {
   closestCenter, DndContext, PointerSensor, useSensor, useSensors, type DragEndEvent,
@@ -10,9 +10,10 @@ import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } 
 import { CSS } from '@dnd-kit/utilities';
 import clsx from 'clsx';
 import {
-  logout, openIdeaCapture, openQuickAdd, reorderProjects, selectTask, setPaletteOpen, useStore,
+  logout, openIdeaCapture, openQuickAdd, reorderProjects, selectTask, setPaletteOpen, toggleTheme, useStore,
 } from '../store';
 import { joinShared } from '../lib/ideas';
+import { useThemeMode } from '../lib/themeMode';
 import { useCounts, useProjectList, useTaskList } from '../lib/selectors';
 import type { Project } from '../types';
 import { CommandPalette } from './CommandPalette';
@@ -25,6 +26,16 @@ import { ConfirmHost, Modal, Toasts, useHotkey } from './ui';
 
 export function Wordmark() {
   return <span className="wordmark"><i><Check strokeWidth={3} /></i>مهامي</span>;
+}
+
+function ThemeButton() {
+  const dark = useThemeMode() === 'dark';
+  const label = dark ? 'قائمة جانبية فاتحة' : 'قائمة جانبية غامقة';
+  return (
+    <button className="icon-btn" aria-label={label} title={label} aria-pressed={dark} onClick={toggleTheme}>
+      {dark ? <Sun /> : <Moon />}
+    </button>
+  );
 }
 
 export function initials(name: string, email: string) {
@@ -99,6 +110,7 @@ export function Layout({ children }: { children: ReactNode }) {
         <header className="topbar">
           <Wordmark />
           <div className="row" style={{ gap: 2 }}>
+            <ThemeButton />
             <button className="icon-btn" aria-label="بحث" onClick={() => setPaletteOpen(true)}><Search /></button>
             <NavLink to="/settings" className="icon-btn" aria-label="الإعدادات"><Settings /></NavLink>
           </div>
@@ -201,6 +213,7 @@ function Sidebar() {
             <small>{user.email}</small>
           </span>
         </NavLink>
+        <ThemeButton />
         <button className="icon-btn" aria-label="تسجيل الخروج" onClick={() => void logout()}><LogOut /></button>
       </div>
     </aside>

@@ -1,12 +1,13 @@
 import { useMemo } from 'react';
-import { Check, PartyPopper, Star } from 'lucide-react';
+import { Check, PartyPopper, Pin, Star } from 'lucide-react';
 import clsx from 'clsx';
 import { moveTasks, openQuickAdd, toggleHabit, useStore } from '../store';
 import { formatFullDate, greeting, todayKey, toKey } from '../lib/dates';
-import { byAgenda, byCompletedDesc, habitStreak, isScheduled, useHabitList, useSubtaskCounts, useTaskList } from '../lib/selectors';
+import { byAgenda, byCompletedDesc, byPinned, habitStreak, isScheduled, useHabitList, useSubtaskCounts, useTaskList } from '../lib/selectors';
 import { TaskRow } from '../components/TaskRow';
 import { InlineAdd } from '../components/QuickAdd';
-import { CompletedSection } from '../components/TaskLists';
+import { commitMove, CompletedSection, OverlayRow, SortableTaskRows } from '../components/TaskLists';
+import { SortableGroup, SortableGroups } from '../components/SortableGroups';
 import { SparkCard } from '../components/IdeaCard';
 import { Icon } from '../components/Icon';
 import { PageTitle } from '../components/PageTitle';
@@ -35,9 +36,11 @@ export function TodayPage() {
   const habits = useHabitList();
   const logs = useStore((s) => s.habitLogs);
 
-  const { overdue, todays, done } = useMemo(() => {
+  const { pinned, overdue, todays, done } = useMemo(() => {
     const top = tasks.filter((t) => !t.parentId);
     return {
+      // Pinned tasks with no date (or a later one) surface here; today's and overdue ones stay in their groups.
+      pinned: top.filter((t) => t.pinned && !t.completed && (!t.dueDate || t.dueDate > today)).sort(byPinned),
       overdue: top.filter((t) => !t.completed && t.dueDate && t.dueDate < today)
         .sort((a, b) => (a.dueDate! < b.dueDate! ? -1 : a.dueDate! > b.dueDate! ? 1 : byAgenda(a, b))),
       todays: top.filter((t) => !t.completed && t.dueDate === today).sort(byAgenda),
@@ -47,6 +50,7 @@ export function TodayPage() {
 
   const todaysHabits = habits.filter((h) => isScheduled(h, today));
   const total = overdue.length + todays.length + done.length;
+  const todayGroups = useMemo(() => ({ today: todays.map((t) => t.id) }), [todays]);
   const firstName = user.name.trim().split(/\s+/)[0];
 
   return (
@@ -74,6 +78,16 @@ export function TodayPage() {
         </div>
       )}
 
+      {pinned.length > 0 && (
+        <section className="group first">
+          <div className="group-head">
+            <h2 className="h2 pinned-head"><Pin />مثبّتة</h2>
+            <span className="count num">{pinned.length}</span>
+          </div>
+          {pinned.map((t) => <TaskRow key={t.id} task={t} subtasks={subtasks[t.id]} />)}
+        </section>
+      )}
+
       {overdue.length > 0 && (
         <section className="group">
           <div className="group-head hot">
@@ -89,14 +103,18 @@ export function TodayPage() {
         </section>
       )}
 
-      <section className={overdue.length ? 'group' : 'group first'}>
-        {overdue.length > 0 && (
+      <section className={overdue.length || pinned.length ? 'group' : 'group first'}>
+        {(overdue.length > 0 || pinned.length > 0) && (
           <div className="group-head">
             <h2 className="h2">لليوم</h2>
             <span className="count num">{todays.length}</span>
           </div>
         )}
-        {todays.map((t) => <TaskRow key={t.id} task={t} showDate={false} subtasks={subtasks[t.id]} />)}
+        <SortableGroups groups={todayGroups} renderOverlay={(id) => <OverlayRow id={id} />} onMove={(m) => commitMove(m)}>
+          <SortableGroup id="today" className="group-drop">
+            <SortableTaskRows groupId="today" showDate={false} />
+          </SortableGroup>
+        </SortableGroups>
         <InlineAdd defaults={{ dueDate: today }} />
         {todays.length === 0 && overdue.length === 0 && (
           done.length > 0 ? (

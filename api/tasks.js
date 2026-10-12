@@ -14,6 +14,7 @@ export default resource({
     recurrence: t.recurrence(),
     tags: t.tags(),
     completed: t.bool(),
+    pinned: t.bool(),
     completedAt: t.timestamp(),
     position: t.float(),
   },

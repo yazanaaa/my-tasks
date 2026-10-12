@@ -8,7 +8,7 @@ import { habitRate, useHabitList, useProjectList, useTaskList } from '../lib/sel
 import { Icon } from '../components/Icon';
 import { PageTitle } from '../components/PageTitle';
 
-const HEAT_STEPS = ['var(--fill)', '#cddff3', '#93bce6', '#4f8fd0', '#255f9e'];
+const HEAT_STEPS = ['var(--fill)', '#bcd2ee', '#7aa6dc', '#3a76c4', '#1b5299'];
 const heatLevel = (n: number) => (n === 0 ? 0 : n <= 1 ? 1 : n <= 3 ? 2 : n <= 5 ? 3 : 4);
 
 export function StatsPage() {
@@ -223,7 +223,7 @@ function WeekdayBars({ values }: { values: number[] }) {
       {[0, 1, 2, 3, 4, 5, 6].map((d) => (
         <div key={d} className="hbar">
           <span className="hbar-label">{DAY_NAMES[d]}</span>
-          <span className="hbar-track"><i style={{ width: `${(values[d] / max) * 100}%`, background: d === best && values[d] > 0 ? 'var(--accent)' : 'color-mix(in srgb, var(--accent) 30%, #fff)' }} /></span>
+          <span className="hbar-track"><i style={{ width: `${(values[d] / max) * 100}%`, background: d === best && values[d] > 0 ? 'var(--accent)' : 'color-mix(in srgb, var(--accent) 30%, var(--surface))' }} /></span>
           <b className="num">{values[d]}</b>
         </div>
       ))}
