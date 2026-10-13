@@ -857,7 +857,7 @@ export function ideaToTask(id: string): Task | null {
   const task = addTask({ title: stripTags(title).slice(0, 500), notes: body, tags: idea.tags });
   updateIdea(id, { convertedAt: Date.now(), taskId: task.id, projectId: null });
   set({ selectedIdeaId: null, selectedTaskId: task.id });
-  toast('صارت الفكرة مهمة بالوارد');
+  toast('صارت الفكرة مهمة بـ«المهام السريعة»');
   return task;
 }
 

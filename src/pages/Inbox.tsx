@@ -19,7 +19,7 @@ export function InboxPage() {
 
   return (
     <div className="page">
-      <PageTitle view="inbox" title="الوارد" subtitle="مهام لسا ما إلها مشروع" />
+      <PageTitle view="inbox" title="المهام السريعة" subtitle="مهام لسا ما إلها مشروع" />
       <SortableGroups groups={groups} renderOverlay={(id) => <OverlayRow id={id} showProject={false} />} onMove={(m) => commitMove(m)}>
         <SortableGroup id="inbox" className="group-drop">
           <SortableTaskRows groupId="inbox" showProject={false} />
@@ -27,7 +27,7 @@ export function InboxPage() {
       </SortableGroups>
       <InlineAdd />
       {groups.inbox.length === 0 && (
-        <EmptyState color="var(--accent)" icon={<Inbox />} title="الوارد فاضي" body="حط هون المهام اللي لازم تنعمل ولسا ما إلها مشروع. الأفكار الحرة مكانها بصفحة الأفكار." />
+        <EmptyState color="var(--accent)" icon={<Inbox />} title="ما في مهام سريعة" body="حط هون المهام اللي لازم تنعمل ولسا ما إلها مشروع. الأفكار الحرة مكانها بصفحة الأفكار." />
       )}
       <CompletedSection tasks={done} showProject={false} />
     </div>

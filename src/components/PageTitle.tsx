@@ -7,9 +7,9 @@ import {
 // Each view owns a color: it tints its sidebar icon and its page title icon.
 export const VIEWS = {
   today: { label: 'اليوم', icon: Star, color: 'var(--hue-amber)', to: '/' },
-  daily: { label: 'يومية', icon: ListRestart, color: 'var(--hue-teal)', to: '/daily' },
+  daily: { label: 'المهام اليومية', icon: ListRestart, color: 'var(--hue-teal)', to: '/daily' },
   upcoming: { label: 'القادم', icon: CalendarDays, color: 'var(--hue-red)', to: '/upcoming' },
-  inbox: { label: 'الوارد', icon: Inbox, color: 'var(--accent)', to: '/inbox' },
+  inbox: { label: 'المهام السريعة', icon: Inbox, color: 'var(--accent)', to: '/inbox' },
   ideas: { label: 'الأفكار', icon: Lightbulb, color: 'var(--idea)', to: '/ideas' },
   calendar: { label: 'التقويم', icon: CalendarRange, color: 'var(--hue-violet)', to: '/calendar' },
   habits: { label: 'العادات', icon: Flame, color: 'var(--hue-orange)', to: '/habits' },

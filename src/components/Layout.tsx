@@ -45,9 +45,9 @@ export function initials(name: string, email: string) {
 // `key` is the Alt+number shortcut; ideas got 7 and «يومية» 8 so the older shortcuts keep their pages.
 const MAIN_NAV: { view: ViewKey; key: string; count?: 'today' | 'inbox' | 'daily' }[] = [
   { view: 'today', key: '1', count: 'today' },
+  { view: 'inbox', key: '3', count: 'inbox' },
   { view: 'daily', key: '8', count: 'daily' },
   { view: 'upcoming', key: '2' },
-  { view: 'inbox', key: '3', count: 'inbox' },
   { view: 'ideas', key: '7' },
   { view: 'calendar', key: '4' },
   { view: 'habits', key: '5' },

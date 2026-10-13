@@ -45,7 +45,7 @@ export function DailyPage() {
     <div className="page">
       <PageTitle
         view="daily"
-        title="يومية"
+        title="المهام اليومية"
         subtitle={`بترجع من جديد كل يوم الساعة ${DAILY_RESET_HOUR} الصبح`}
         actions={items.length > 0 ? (
           <>

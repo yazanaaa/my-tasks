@@ -178,7 +178,7 @@ function QuickAddDialog({ defaults }: { defaults: QuickAddDefaults }) {
       <div className="qa-bar">
         <button className={clsx('qa-pill', project && 'set')} onClick={projectPop.toggle}>
           {project ? <i className="project-dot" style={{ '--c': project.color } as React.CSSProperties} /> : <Inbox />}
-          {project?.name ?? 'الوارد'}
+          {project?.name ?? 'المهام السريعة'}
         </button>
         <button className={clsx('qa-pill', dueDate && 'set')} onClick={datePop.toggle}>
           <CalendarDays />
@@ -202,7 +202,7 @@ function QuickAddDialog({ defaults }: { defaults: QuickAddDefaults }) {
 
       {projectPop.open && (
         <Popover anchor={projectPop.anchor} onClose={projectPop.close} width={240}>
-          <MenuItem icon={<Inbox />} label="الوارد" active={!projectId} onClick={() => { setManual((m) => ({ ...m, projectId: null })); projectPop.close(); inputRef.current?.focus(); }} />
+          <MenuItem icon={<Inbox />} label="المهام السريعة" active={!projectId} onClick={() => { setManual((m) => ({ ...m, projectId: null })); projectPop.close(); inputRef.current?.focus(); }} />
           {projects.map((p) => (
             <MenuItem
               key={p.id}

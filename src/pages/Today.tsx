@@ -124,7 +124,7 @@ export function TodayPage() {
               color="var(--hue-amber)"
               icon={<Star fill="currentColor" />}
               title="يومك فاضي"
-              body="أضف أول مهمة لليوم، أو اختار مهام من الوارد والمشاريع."
+              body="أضف أول مهمة لليوم، أو اختار مهام من «المهام السريعة» والمشاريع."
               action={<button className="btn btn-primary" onClick={() => openQuickAdd({ dueDate: today })}>مهمة لليوم</button>}
             />
           )

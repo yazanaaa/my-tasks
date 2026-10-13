@@ -103,7 +103,7 @@ function TaskDetail({ task }: { task: Task }) {
       <div className="detail-top">
         <button className="crumb" onClick={projectPop.toggle}>
           {project ? <i className="project-dot" style={{ '--c': project.color } as React.CSSProperties} /> : <Inbox />}
-          <span>{project?.name ?? 'الوارد'}{section && <span className="faint"> / {section.name}</span>}</span>
+          <span>{project?.name ?? 'المهام السريعة'}{section && <span className="faint"> / {section.name}</span>}</span>
           <ChevronDown />
         </button>
         <span className="spacer" />
@@ -278,7 +278,7 @@ function TaskDetail({ task }: { task: Task }) {
       )}
       {projectPop.open && (
         <Popover anchor={projectPop.anchor} onClose={projectPop.close} width={260}>
-          <MenuItem icon={<Inbox />} label="الوارد" active={!task.projectId} onClick={() => { updateTask(task.id, { projectId: null }); projectPop.close(); }} />
+          <MenuItem icon={<Inbox />} label="المهام السريعة" active={!task.projectId} onClick={() => { updateTask(task.id, { projectId: null }); projectPop.close(); }} />
           {projects.map((p) => {
             const secs = Object.values(allSections).filter((s) => s.projectId === p.id).sort(byPosition);
             return (
