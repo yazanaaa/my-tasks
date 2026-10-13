@@ -53,7 +53,6 @@ function Palette() {
       { id: 'n-upcoming', group: 'انتقال', label: 'القادم', icon: <CalendarRange />, run: go('/upcoming') },
       { id: 'n-ideas', group: 'انتقال', label: 'الأفكار', icon: <Lightbulb />, run: go('/ideas') },
       { id: 'n-cal', group: 'انتقال', label: 'التقويم', icon: <CalendarDays />, run: go('/calendar') },
-      { id: 'n-habits', group: 'انتقال', label: 'العادات', icon: <Flame />, run: go('/habits') },
       { id: 'n-stats', group: 'انتقال', label: 'الإحصائيات', icon: <ChartColumn />, run: go('/stats') },
       { id: 'n-settings', group: 'انتقال', label: 'الإعدادات', icon: <Settings />, run: go('/settings') },
       ...projects.map((p) => ({

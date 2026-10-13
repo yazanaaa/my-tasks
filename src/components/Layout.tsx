@@ -50,7 +50,6 @@ const MAIN_NAV: { view: ViewKey; key: string; count?: 'today' | 'inbox' | 'daily
   { view: 'upcoming', key: '2' },
   { view: 'ideas', key: '7' },
   { view: 'calendar', key: '4' },
-  { view: 'habits', key: '5' },
   { view: 'stats', key: '6' },
 ];
 
@@ -247,7 +246,7 @@ function TabBar({ onMore }: { onMore: () => void }) {
     { to: '/ideas', label: 'الأفكار', icon: Lightbulb, color: VIEWS.ideas.color, className: 'tab-ideas' },
     { to: '/projects', label: 'المشاريع', icon: FolderKanban, color: VIEWS.projects.color },
   ];
-  const isMore = ['/inbox', '/daily', '/habits', '/calendar', '/stats', '/settings'].some((p) => pathname.startsWith(p));
+  const isMore = ['/inbox', '/daily', '/calendar', '/stats', '/settings'].some((p) => pathname.startsWith(p));
   return (
     <nav className="tabbar">
       {tabs.map(({ to, label, icon: I, color, className }) => (
@@ -266,7 +265,6 @@ function MoreSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const items: { view: ViewKey; n?: number }[] = [
     { view: 'inbox', n: counts.inbox },
     { view: 'daily', n: dailyLeft },
-    { view: 'habits' },
     { view: 'calendar' },
     { view: 'stats' },
     { view: 'settings' },

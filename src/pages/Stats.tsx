@@ -2,10 +2,8 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { CalendarCheck, CircleAlert, Flame, Star } from 'lucide-react';
 import clsx from 'clsx';
-import { useStore } from '../store';
 import { addDays, DAY_LETTER, DAY_NAMES, formatFullDate, fromKey, relativeDay, startOfWeek, todayKey, toKey } from '../lib/dates';
-import { habitRate, useHabitList, useProjectList, useTaskList } from '../lib/selectors';
-import { Icon } from '../components/Icon';
+import { useProjectList, useTaskList } from '../lib/selectors';
 import { PageTitle } from '../components/PageTitle';
 
 const HEAT_STEPS = ['var(--fill)', '#bcd2ee', '#7aa6dc', '#3a76c4', '#1b5299'];
@@ -14,8 +12,6 @@ const heatLevel = (n: number) => (n === 0 ? 0 : n <= 1 ? 1 : n <= 3 ? 2 : n <= 5
 export function StatsPage() {
   const tasks = useTaskList();
   const projects = useProjectList();
-  const habits = useHabitList();
-  const logs = useStore((s) => s.habitLogs);
   const today = todayKey();
 
   const data = useMemo(() => {
@@ -91,31 +87,11 @@ export function StatsPage() {
         <CompletionHeatmap perDay={data.perDay} today={today} />
       </section>
 
-      <div className="chart-pair">
-        <section className="chart-card">
-          <h2 className="h2">أكثر أيامك إنتاجًا</h2>
-          <p className="faint chart-sub">مجموع آخر 90 يوم</p>
-          <WeekdayBars values={data.byWeekday} />
-        </section>
-
-        <section className="chart-card">
-          <h2 className="h2">العادات</h2>
-          <p className="faint chart-sub">نسبة الالتزام آخر 30 يوم</p>
-          {habits.length === 0 && <p className="faint">لا يوجد عادات بعد. <Link to="/habits" className="link">أضف عادة</Link></p>}
-          <div className="hbars">
-            {habits.map((h) => {
-              const rate = Math.round(habitRate(h, logs, 30, today) * 100);
-              return (
-                <div key={h.id} className="hbar">
-                  <span className="hbar-label"><Icon name={h.icon} style={{ color: h.color }} />{h.name}</span>
-                  <span className="hbar-track"><i style={{ width: `${rate}%`, background: h.color }} /></span>
-                  <b className="num">{rate}%</b>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-      </div>
+      <section className="chart-card">
+        <h2 className="h2">أكثر أيامك إنتاجًا</h2>
+        <p className="faint chart-sub">مجموع آخر 90 يوم</p>
+        <WeekdayBars values={data.byWeekday} />
+      </section>
 
       {projectStats.length > 0 && (
         <section className="chart-card">

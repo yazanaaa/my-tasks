@@ -1,15 +1,13 @@
 import { useMemo } from 'react';
-import { Check, PartyPopper, Pin, Star } from 'lucide-react';
-import clsx from 'clsx';
-import { moveTasks, openQuickAdd, toggleHabit, useStore } from '../store';
+import { PartyPopper, Pin, Star } from 'lucide-react';
+import { moveTasks, openQuickAdd, useStore } from '../store';
 import { formatFullDate, greeting, todayKey, toKey } from '../lib/dates';
-import { byAgenda, byCompletedDesc, byPinned, habitStreak, isScheduled, useHabitList, useSubtaskCounts, useTaskList } from '../lib/selectors';
+import { byAgenda, byCompletedDesc, byPinned, useSubtaskCounts, useTaskList } from '../lib/selectors';
 import { TaskRow } from '../components/TaskRow';
 import { InlineAdd } from '../components/QuickAdd';
 import { commitMove, CompletedSection, OverlayRow, SortableTaskRows } from '../components/TaskLists';
 import { SortableGroup, SortableGroups } from '../components/SortableGroups';
 import { SparkCard } from '../components/IdeaCard';
-import { Icon } from '../components/Icon';
 import { PageTitle } from '../components/PageTitle';
 import { EmptyState } from '../components/ui';
 
@@ -33,8 +31,6 @@ export function TodayPage() {
   const user = useStore((s) => s.user)!;
   const tasks = useTaskList();
   const subtasks = useSubtaskCounts();
-  const habits = useHabitList();
-  const logs = useStore((s) => s.habitLogs);
 
   const { pinned, overdue, todays, done } = useMemo(() => {
     const top = tasks.filter((t) => !t.parentId);
@@ -48,7 +44,6 @@ export function TodayPage() {
     };
   }, [tasks, today]);
 
-  const todaysHabits = habits.filter((h) => isScheduled(h, today));
   const total = overdue.length + todays.length + done.length;
   const todayGroups = useMemo(() => ({ today: todays.map((t) => t.id) }), [todays]);
   const firstName = user.name.trim().split(/\s+/)[0];
@@ -62,21 +57,6 @@ export function TodayPage() {
         actions={total > 0 ? <Ring done={done.length} total={total} /> : undefined}
       />
 
-      {todaysHabits.length > 0 && (
-        <div className="habit-strip">
-          {todaysHabits.map((h) => {
-            const on = !!logs[`${h.id}|${today}`];
-            const streak = habitStreak(h, logs, today);
-            return (
-              <button key={h.id} className={clsx('habit-pill', on && 'on')} style={{ '--c': h.color } as React.CSSProperties} onClick={() => toggleHabit(h.id, today)}>
-                <span className="habit-pill-icon">{on ? <Check strokeWidth={3} /> : <Icon name={h.icon} />}</span>
-                <span>{h.name}</span>
-                {streak > 0 && <span className="num faint">{streak}</span>}
-              </button>
-            );
-          })}
-        </div>
-      )}
 
       {pinned.length > 0 && (
         <section className="group first">

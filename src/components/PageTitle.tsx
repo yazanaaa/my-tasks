@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import {
-  CalendarDays, CalendarRange, ChartColumn, Flame, FolderKanban, Inbox, Lightbulb, ListRestart, Settings, Star,
+  CalendarDays, CalendarRange, ChartColumn, FolderKanban, Inbox, Lightbulb, ListRestart, Settings, Star,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -12,7 +12,6 @@ export const VIEWS = {
   inbox: { label: 'المهام السريعة', icon: Inbox, color: 'var(--accent)', to: '/inbox' },
   ideas: { label: 'الأفكار', icon: Lightbulb, color: 'var(--idea)', to: '/ideas' },
   calendar: { label: 'التقويم', icon: CalendarRange, color: 'var(--hue-violet)', to: '/calendar' },
-  habits: { label: 'العادات', icon: Flame, color: 'var(--hue-orange)', to: '/habits' },
   stats: { label: 'الإحصائيات', icon: ChartColumn, color: 'var(--hue-green)', to: '/stats' },
   projects: { label: 'المشاريع', icon: FolderKanban, color: 'var(--hue-indigo)', to: '/projects' },
   settings: { label: 'الإعدادات', icon: Settings, color: 'var(--ink-3)', to: '/settings' },
